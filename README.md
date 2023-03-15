@@ -19,8 +19,7 @@ For simple deployment I created a `docker-compose.yml` that will run the server 
 I used a factory design pattern to dynamically create the scraper based on the configuration file or
 the user http request.
 The developer can easily add new scrapers by implementing the Scraper interface in 
-`scraper.py` and adding the scraper to the factory by adding it to the `SCRAPERS` list in `scrapers
-__init__.py`.
+`scraper.py` and adding the scraper to the factory by adding it to the `SCRAPERS` list in `scraper\__init__.py`.
 
 ## Crawler
 The `crawler.py` is class with a recursive function that will crawl the internet starting from the given url.
