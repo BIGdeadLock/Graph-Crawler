@@ -1,7 +1,6 @@
 import os
 import sys
 
-
 WINDOWS_OS_STR = "nt"
 IS_WINDOWS_OS = (os.name == WINDOWS_OS_STR)
 
@@ -24,6 +23,11 @@ STORE_DIR = "store"
 STORE_PATH = os.path.join(PROJECT_DIR, STORE_DIR)
 os.makedirs(STORE_PATH, exist_ok=True)
 
+# -----------------
+# SYSTEM CONFIG
+# -----------------
+SYSTEM_SECTION = "SYSTEM"
+NUMBER_OF_JOBS_CONFIG_TOKEN = 'number_of_jobs'
 
 # -----------------
 # SERVER TOKENS
@@ -42,3 +46,17 @@ CONFIG_PORT_TOKEN = "port"
 CONFIG_HOST_TOKEN = "host"
 CONFIG_IP_TOKEN = "ip"
 CONFIG_URL_PREFIX_TOKEN = "url_prefix"
+
+# -----------------
+# CRAWLER CONFIG SECTION
+# -----------------
+CRAWLER_SECTION = "CRAWLER"
+SEEDS_CONFIG_TOKEN = "seeds"
+
+# -----------------
+# SCRAPER SECTION
+# -----------------
+SCRAPER_SECTION = "SCRAPER"
+EMAIL_SCRAPER_TOKEN = "email"
+LINKS_SCRAPER_TOKEN = "links"
+SCRAPERS_CONFIG_TOKEN = "scrapers"

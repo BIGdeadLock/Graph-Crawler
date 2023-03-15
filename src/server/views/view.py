@@ -15,7 +15,7 @@ CORS(view)
 
 @view.route(uri.BUILD_GRAPH, methods=[consts.POST_TOKEN])
 # @swag_from(f'{os.path.join(consts.SCHEMAS_DIR_PATH, consts.PLAYBOOK_YML_FILE_NAME)}')
-def get_playbook():
+def get_graph():
     try:
         content = request.json
         loop = asyncio.new_event_loop()

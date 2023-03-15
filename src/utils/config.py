@@ -45,3 +45,19 @@ class Config(object):
         except Exception as e:
             log.error(f"Could not get {param} from {section}. Error: {e}")
             raise ConfigError
+
+    def get_seeds(self):
+        seeds = self.get(section=consts.CRAWLER_SECTION, param=consts.SEEDS_CONFIG_TOKEN, default_value="")
+        if not seeds:
+            return []
+
+        res = seeds.replace(" ", "").replace("\n", "").split(",")
+        return res
+
+    def get_scrapers(self):
+        scrapers = self.get(section=consts.CRAWLER_SECTION, param=consts.SCRAPERS_CONFIG_TOKEN, default_value="")
+        if not scrapers:
+            return []
+
+        res = scrapers.replace(" ", "").replace("\n", "").split(",")
+        return res
