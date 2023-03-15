@@ -10,6 +10,7 @@ app = Flask(__name__)
 CORS(app)
 swagger = Swagger(app)
 
+
 class RunServer:
     def __init__(self, section: str):
         self.server_port = Config().get(section=section, param=consts.CONFIG_PORT_TOKEN)
