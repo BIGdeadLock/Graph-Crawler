@@ -1,0 +1,57 @@
+
+parameters:
+  - in: body
+    name: crwaling_config
+    description: "The configuration for the crawling process."
+    schema:
+      $ref: '#/definitions/CrawlingConfig'
+
+
+definitions:
+  CrawlingConfig:
+    type: object
+    properties:
+      scrapers:
+        description: "The scrapers to use for crawling. Options for now is only email."
+        type: array
+        items:
+          type: string
+          example: "email"
+      seeds:
+        description: "The seeds to start the crawling from"
+        type: array
+        items:
+          type: string
+          example: "https://www.miet.ac.in"
+
+responses:
+  200:
+    description: "A json file representing the crawling result which is a web graph."
+    schema:
+      type: object
+      properties:
+          adjacency:
+            type: array
+            items:
+              type: array
+              items:
+                type: object
+                example: {"id": "miet.ac.in","weight": 0}
+          directed:
+            description: "Whether the graph is directed or not."
+            type: boolean
+            example: true
+          multigraph:
+              description: "Whether the graph is a multigraph or not."
+              type: boolean
+              example: false
+          graph:
+            type: array
+            example: []
+          nodes:
+            description: "The nodes of the graph."
+            type: array
+            items:
+              type: object
+              example: {"id": "miet.ac.in"}
+

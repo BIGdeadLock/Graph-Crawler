@@ -25,3 +25,7 @@ The developer can easily add new scrapers by implementing the Scraper interface 
 The `crawler.py` is class with a recursive function that will crawl the internet starting from the given url.
 to speed up the crawling process I used a thread pool to run the scraper in parallel.
 Each new crawler was started with a different seed which was given by the user.
+
+# API Documentation
+This project is using swagger for api documentation. Available at `http://localhost:5000/apidocs`. After running
+the server you can use the swagger ui to test the api.
