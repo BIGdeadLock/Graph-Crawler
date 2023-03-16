@@ -26,3 +26,6 @@ class LinksScraper(Scraper):
 
     def get_id(self) -> str:
         return consts.LINKS_SCRAPER_TOKEN
+
+    def get_weight(self) -> int:
+        return 0

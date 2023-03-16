@@ -10,5 +10,9 @@ class Scraper(ABC):
         pass
 
     @abstractmethod
+    def get_weight(self) -> int:
+        pass
+
+    @abstractmethod
     def get_id(self) -> str:
         pass

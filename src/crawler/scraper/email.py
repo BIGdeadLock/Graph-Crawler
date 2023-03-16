@@ -17,3 +17,6 @@ class EmailScraper(Scraper):
 
     def get_id(self) -> str:
         return consts.EMAIL_SCRAPER_TOKEN
+
+    def get_weight(self) -> int:
+        return 1

@@ -23,6 +23,14 @@ STORE_DIR = "store"
 STORE_PATH = os.path.join(PROJECT_DIR, STORE_DIR)
 os.makedirs(STORE_PATH, exist_ok=True)
 
+TEMPLATES_DIR = "templates"
+TEMPLATES_PATH = os.path.join(PROJECT_DIR, TEMPLATES_DIR)
+os.makedirs(TEMPLATES_PATH, exist_ok=True)
+GRAPH_TEMPLATE_FILE_NAME = "graph_template.html"
+TEMPLATE_FILE_NAME = "template.html"
+GRAPH_TEMPLATE_PATH = os.path.join(TEMPLATES_PATH, GRAPH_TEMPLATE_FILE_NAME)
+TEMPLATE_PATH = os.path.join(TEMPLATES_PATH, TEMPLATE_FILE_NAME)
+
 # -----------------
 # SYSTEM CONFIG
 # -----------------
@@ -52,6 +60,9 @@ CONFIG_URL_PREFIX_TOKEN = "url_prefix"
 # -----------------
 CRAWLER_SECTION = "CRAWLER"
 SEEDS_CONFIG_TOKEN = "seeds"
+VALID_WEBSITE_SUFFIXES = [".com", ".org", ".net", ".edu", ".gov", ".mil", ".io", ".co", ".uk", ".jp", ".kr", ".uk",
+                          ".in", ".de", ".fr", ".it", ".es", ".nl", ".cz", ".pl", ".ru", ".cn", ".ca", ".au", ".br", ".mx",
+                          ]
 
 # -----------------
 # SCRAPER SECTION
