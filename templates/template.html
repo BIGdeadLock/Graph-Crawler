@@ -3,7 +3,26 @@
   <head>
     <meta charset="utf-8">
     <title>NetworkX Graph Visualization</title>
+    <style>
+      .links line {
+        stroke: #999;
+        stroke-opacity: 0.6;
+      }
+      .nodes circle {
+        stroke: #fff;
+        stroke-width: 1.5px;
+      }
+      .edgeLabel {
+        fill: #000;
+        font-size: 16px;
+        font-weight: bold;
+        text-anchor: middle;
+        pointer-events: none;
+        color: brown;
+      }
+    </style>
     <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-zoom/1.7.0/d3-zoom.min.js"></script>
   </head>
   <body>
     <svg width="960" height="600"></svg>
@@ -12,62 +31,96 @@
       var svg = d3.select("svg"),
           width = +svg.attr("width"),
           height = +svg.attr("height");
+      var zoom_handler = d3.zoom()
+          .on("zoom", zoom_actions);
+      zoom_handler(svg);
+      function zoom_actions() {
+        g.attr("transform", d3.event.transform);
+      }
       var simulation = d3.forceSimulation()
-          .force("link", d3.forceLink().id(function(d) { return d.id; }))
-          .force("charge", d3.forceManyBody())
+          .force("link", d3.forceLink().id(function(d) { return d.id; }).distance(100))
+          .force("charge", d3.forceManyBody().strength(-100))
           .force("center", d3.forceCenter(width / 2, height / 2));
-      var link = svg.append("g")
+      var g = svg.append("g")
+          .attr("class", "everything");
+      var link = g.append("g")
           .attr("class", "links")
         .selectAll("line")
         .data(data.links)
         .enter().append("line")
-          .attr("stroke", "#999")
-          .attr("stroke-opacity", 0.6)
-          .attr("stroke-width", function(d) { return Math.sqrt(d.value); });
-      var node = svg.append("g")
+          .attr("stroke-width", function(d) { return Math.sqrt(d.value); })
+          .attr("marker-end", "url(#arrowhead)")
+          .style("stroke", function(d) { return d.value === 1 ? "red" : "#999"; })
+      var edgepaths = g.selectAll(".edgepath")
+        .data(data.links)
+        .enter()
+        .append('path')
+        .attr('class', 'edgepath')
+        .attr('fill-opacity', 0)
+        .attr('stroke-opacity', 0)
+        .attr('id', function (d, i) {return 'edgepath' + i})
+        .style("pointer-events", "none");
+      var edgelabels = g.selectAll(".edgelabel")
+      .data(data.links)
+      .enter()
+      .append('text')
+      .style("pointer-events", "none")
+      .attr('class', 'edgeLabel')
+      .attr('id', function (d, i) {return 'edgelabel' + i})
+      .attr('font-size', 16)
+      .attr('fill', 'brown');
+      edgelabels.append('textPath')
+        .attr('xlink:href', function (d, i) {return '#edgepath' + i})
+        .style("text-anchor", "middle")
+        .attr("startOffset", "50%")
+        .text(function (d) {return d.weight});
+      var node = g.append("g")
           .attr("class", "nodes")
         .selectAll("g")
         .data(data.nodes)
         .enter().append("g")
           .attr("class", "node")
           .call(d3.drag()
-              .on("start", dragstarted)
-              .on("drag", dragged)
-              .on("end", dragended));
+              .on("drag", drag_actions));
       node.append("circle")
-          .attr("r", 5)
-          .attr("fill", "#2e86c1");
+      .attr("r", 5)
+      .attr("fill", "#333");
       node.append("text")
-          .attr("x", 12)
-          .attr("dy", ".35em")
-          .text(function(d) { return d.id; });
+      .attr("dx", 10)
+      .attr("dy", ".35em")
+      .text(function(d) { return d.id });
       simulation
-          .nodes(data.nodes)
-          .on("tick", ticked);
+      .nodes(data.nodes)
+      .on("tick", ticked);
       simulation.force("link")
-          .links(data.links);
+      .links(data.links);
       function ticked() {
-        link
-            .attr("x1", function(d) { return d.source.x; })
-            .attr("y1", function(d) { return d.source.y; })
-            .attr("x2", function(d) { return d.target.x; })
-            .attr("y2", function(d) { return d.target.y; });
-        node
-            .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+      link
+      .attr("x1", function(d) { return d.source.x; })
+      .attr("y1", function(d) { return d.source.y; })
+      .attr("x2", function(d) { return d.target.x; })
+      .attr("y2", function(d) { return d.target.y; });
+      node
+      .attr("transform", function(d) {
+      return "translate(" + d.x + "," + d.y + ")";
+      });
+      edgepaths.attr('d', function (d) {
+      return 'M ' + d.source.x + ' ' + d.source.y + ' L ' + d.target.x + ' ' + d.target.y;
+      });
+      edgelabels.attr('transform', function (d) {
+      if (d.target.x < d.source.x) {
+      var bbox = this.getBBox();
+      var rx = bbox.x + bbox.width / 2;
+      var ry = bbox.y + bbox.height / 2;
+      return 'rotate(180 ' + rx + ' ' + ry + ')';
+      } else {
+      return 'rotate(0)';
       }
-      function dragstarted(d) {
-        if (!d3.event.active) simulation.alphaTarget(0.3).restart();
-        d.fx = d.x;
-        d.fy = d.y;
+      });
       }
-      function dragged(d) {
-        d.fx = d3.event.x;
-        d.fy = d3.event.y;
-      }
-      function dragended(d) {
-        if (!d3.event.active) simulation.alphaTarget(0);
-        d.fx = null;
-        d.fy = null;
+      function drag_actions(d) {
+         d.fx = d3.event.x;
+          d.fy = d3.event.y;
       }
     </script>
   </body>

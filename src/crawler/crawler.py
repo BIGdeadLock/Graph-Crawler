@@ -4,12 +4,12 @@ from queue import PriorityQueue
 import logging as log
 
 import re
-from src.crawler.scraper.links import LinksScraper
 from src.crawler.scraper.scraper import Scraper
 import src.utils.constants as consts
 from urllib.parse import urlsplit
 
 from src.data_structure.graph.web import WebGraph
+from joblib import Parallel, delayed
 
 
 class WebSpider:
@@ -17,54 +17,52 @@ class WebSpider:
         self.scrapers = scrapers
         self._visited = set()
         self._unvisited = PriorityQueue()
-        self._unvisited.put((0, self._process_url(start_seed)))  # The priority will later be set to be the depth of the url
+        self._unvisited.put(
+            (0, self._clean_url(start_seed)))  # The priority will later be set to be the depth of the url
         self._max_depth = max_depth
-        self._links_scraper = LinksScraper()
+        log.warning(f"Max depth is set to {self._max_depth}")
         self._graph = WebGraph()
+        self._domains = set()
 
     def crawl(self) -> WebGraph:
         session = requests.Session()
         try:
             #  Crawls the web starting from the start_seed
-            while not self._unvisited.empty() and len(self._visited) < self._max_depth:
+            while not self._unvisited.empty():
                 # Pop the first element from the queue to continue crawling
                 depth, url = self._unvisited.get()
 
-                # In order to prevent the same link from being visited twice if it is written in different ways:
-                # https://www.example.com and http://www.example.com/
-                # I will check both ways
-                https_url = url.replace("http://", "https://")
-                http_url = url.replace("https://", "http://")
+                if depth > self._max_depth:
+                    log.warning(f"Reached max depth of {self._max_depth}. Stop crawling")
+                    break
 
-                if https_url not in self._visited and http_url not in self._visited:
+                domain = self._extract_domain(url)
+                base_url = self._extract_base_url(url)  # Use to extract the base url from the url
 
-                    self._visited.add(url)
+                if base_url not in self._visited:
+
+                    self._add_edge(domain, url, 0)  # Add an edge between the domain and the url
+                    self._visited.add(base_url)
 
                     try:
-                        log.info(f"Visiting url: {url}")
+                        log.info(f"Visiting url: {url}, depth: {depth}")
                         response = session.get(url)
                     except (requests.exceptions.MissingSchema, requests.exceptions.ConnectionError):
+                        log.warning(f"Could not connect to url: {url}. Continue with next url")
                         # ignore pages with errors and continue with next url
                         continue
 
-                    # Get the links from the current url and add them to the queue
-                    links = self._links_scraper.scrape(response)
-                    for link in links:
+                    n_jobs = len(self.scrapers)
+                    res = Parallel(n_jobs=n_jobs, backend="threading")(
+                        delayed(scraper.scrape)(response)
+                        for scraper in self.scrapers
+                    )
 
-                        if self._is_valid_url(link) and link not in self._visited:
-
-                            # Add the link to the graph
-                            # TODO: Think If I want to add the link to the graph
-                            # self._add_edge(url, link, scraper=self._links_scraper)
-
-                            # Add the link to the queue. The priority will be the depth of the link
-                            self._unvisited.put((depth + 1, self._process_url(link)))
-
-                    # Scrape the data from the current url using the predefined scrapers
-                    for scraper in self.scrapers:
-                        metadata = scraper.scrape(response)
-                        # Add the metadata to the graph
-                        self._add_edge(url, metadata, scraper=scraper)
+                    for scraped_res in res:
+                        if scraped_res.scraper_id == consts.LINKS_SCRAPER_TOKEN:
+                            self._handle_scraped_links(url, scraped_res, depth)
+                        else:
+                            self._handle_scraped_data(url, scraped_res)
 
             return self._graph
 
@@ -74,7 +72,7 @@ class WebSpider:
         finally:
             session.close()
 
-    def _add_edge(self, url: str, data: Union[str, list, set], scraper: Scraper):
+    def _add_edge(self, url: str, data: Union[str, list, set], weight: int, scraper: Scraper = None):
         """
         Add an edge to the graph. If the data is a string, add an edge to the url from the data. If the data is a list,
         add an edge to the url from each element in the list
@@ -83,9 +81,50 @@ class WebSpider:
         :param scraper: Scraper object. The scraper that scraped the data. Need it to get the weight of the edge
         :return:None
         """
-        weight = scraper.get_weight() if scraper is not None else 0
+        weight = weight if scraper is None else scraper.get_weight()
         v_of_edge = [data] if isinstance(data, str) else data
         [self._graph.add_edge(v, url, weight=weight) for v in v_of_edge]
+
+
+    def _handle_scraped_links(self, url, scraped_res, depth):
+        """
+        Handle the scraped links. Add the links to the graph and to the queue
+        :param url: url the link was scraped from
+        :param scraped_res: ScraperResult object. The scraped links
+        :param depth: int. The depth of the url
+        :return:
+        """
+        # For links scraper, the data is a list of links
+        links = scraped_res.data
+        for link in links:
+            if self._is_valid_url(link) and link not in self._visited:
+                # Add the link to the graph
+                self._add_edge(url, link, weight=scraped_res.weight)
+
+                # Add the link to the queue. The priority will be the depth of the link
+                self._unvisited.put((depth + 1, self._clean_url(link)))
+
+    def _handle_scraped_data(self, url, scraped_res):
+        """
+        Handle the scraped data. Add the data to the graph
+        :param url: String. The url to add the edge to
+        :param scraped_data: list of items
+        :return:
+        """
+        self._add_edge(url, scraped_res.data, weight=scraped_res.weight)
+
+    def _extract_domain(self, url: str) -> str:
+        """
+        Extract the domain from the url
+        :param url: string. The url to extract the domain from
+        :return: string. The domain of the url
+        """
+        domain = urlsplit(url).netloc
+        if domain not in self._domains:
+            self._domains.add(domain)
+
+        return domain
+
 
     @staticmethod
     def _is_valid_url(url: str) -> bool:
@@ -106,16 +145,16 @@ class WebSpider:
         return False
 
     @staticmethod
-    def _extract_domain(url: str) -> str:
+    def _extract_base_url(url: str) -> str:
         """
-        Extract the domain from the url
-        :param url: string. The url to extract the domain from
-        :return: string. The domain of the url
+        Extract the base url from the url. For example: https://www.example.com/bla/bla/bla -> example.com/bla/bla/bla
+        :param url: string. The url to extract the base url from
+        :return: string. The base url of the url
         """
-        return urlsplit(url).netloc
+        return urlsplit(url).netloc + urlsplit(url).path
 
     @staticmethod
-    def _process_url(url: str) -> str:
+    def _clean_url(url: str) -> str:
         """
         Process the url and remove the unnecessary parts from it like www or / at the end
         :param url: string. The url to process

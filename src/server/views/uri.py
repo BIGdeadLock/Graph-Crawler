@@ -1,4 +1,5 @@
 # --------------------
 #   Backend Endpoints
 # --------------------
-BUILD_GRAPH = '/build_graph'
+BUILD_GRAPH = '/build'
+VISUALIZE_GRAPH = '/visualize'

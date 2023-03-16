@@ -1,6 +1,6 @@
 from urllib.parse import urljoin
 
-from src.crawler.scraper.scraper import Scraper
+from src.crawler.scraper.scraper import Scraper, ScraperResult
 import src.utils.constants as consts
 
 from bs4 import BeautifulSoup
@@ -9,7 +9,7 @@ from requests import Response
 
 class LinksScraper(Scraper):
 
-    def scrape(self, response: Response) -> list:
+    def scrape(self, response: Response) -> ScraperResult:
         """
         Scrape the response and look for links in the html to other urls
         :param response: request.Response object. Response from the url
@@ -22,7 +22,7 @@ class LinksScraper(Scraper):
             if href is not None and href.startswith('http'):
                 links.append(href)
 
-        return links
+        return ScraperResult(links, self.get_weight(), self.get_id())
 
     def get_id(self) -> str:
         return consts.LINKS_SCRAPER_TOKEN

@@ -2,7 +2,7 @@
 import asyncio
 
 from flasgger import swag_from
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, send_file
 from flask_cors import CORS
 import logging as log
 from src.server.server import ServerInterface
@@ -14,7 +14,7 @@ CORS(view)
 
 
 @view.route(uri.BUILD_GRAPH, methods=[consts.POST_TOKEN])
-# @swag_from(f'{os.path.join(consts.SCHEMAS_DIR_PATH, consts.PLAYBOOK_YML_FILE_NAME)}')
+@swag_from(f'{consts.GRAPH_BUILD_SCHEMA_FILE_PATH}')
 def get_graph():
     try:
         content = request.json
@@ -31,3 +31,16 @@ def get_graph():
         log.info(f"response {resp}")
 
     return resp
+
+@view.route(uri.VISUALIZE_GRAPH, methods=[consts.GET_TOKEN])
+def visualize_graph():
+    try:
+        graph_path = consts.GRAPH_TEMPLATE_PATH
+        return send_file(graph_path)
+    except Exception as e:
+        err = f"{e}"
+        log.error(f"Error: {err}")
+        resp = jsonify({"Error": err})
+        resp.status_code = consts.RESP_SERVER_ERROR_VAL
+        log.info(f"response {resp}")
+

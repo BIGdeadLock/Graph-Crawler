@@ -1,5 +1,8 @@
+import pickle
 from typing import List
 from joblib import Parallel, delayed
+
+from src.crawler.scraper.links import LinksScraper
 from src.crawler.scraper.scraper import Scraper
 from src.crawler.scraper import SCRAPERS
 from src.utils.config import Config
@@ -30,15 +33,18 @@ class ServerInterface(object):
             # If the user didn't specify any seeds, use the config default to start the crawling
             seeds = self._config.get_seeds()
 
+        max_depth = self._config.get(consts.CRAWLER_SECTION, consts.MAX_DEPTH_CONFIG_TOKEN, return_as_string=False)
+
         scrapers_name = content.get(consts.SCRAPERS_CONFIG_TOKEN, None)
         scrapers = self.get_scrapers(names=scrapers_name)
-        self.crawlers = [WebSpider(scrapers=scrapers, start_seed=seed) for seed in seeds]
+
+        self.crawlers = [WebSpider(scrapers=scrapers, start_seed=seed, max_depth=max_depth) for seed in seeds]
         res = [crawler.crawl() for crawler in self.crawlers]
         # # Start a separate thread for each crawler to start crawling from a different seed
         # n_jobs = self._config.get(consts.SYSTEM_SECTION, consts.NUMBER_OF_JOBS_CONFIG_TOKEN, return_as_string=False)
         # res = Parallel(n_jobs=n_jobs, backend="threading")(delayed(crawler.crawl)() for crawler in self.crawlers)
         graph = combine_graphs(res)
-        self.save_graph_as_html(graph)
+        self.save_graph(graph)
         return nx.adjacency_data(graph)
 
     def get_scrapers(self, names: List[str]) -> List[Scraper]:
@@ -55,10 +61,17 @@ class ServerInterface(object):
             for scraper in SCRAPERS:
                 if scraper.get_id() == scraper_name:
                     scrapers.append(scraper)
+
+        scrapers.append(LinksScraper())
         return scrapers
 
     @staticmethod
-    def save_graph_as_html(graph):
+    def save_graph(graph):
+
+        # Save the graph as a pickle to be used later
+        with open(consts.GRAPH_OUTPUT_FILE_PATH, 'wb') as f:
+            pickle.dump(graph, f)
+
         data = nx.readwrite.json_graph.node_link_data(graph)
 
         # serialize the JSON data

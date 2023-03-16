@@ -12,6 +12,9 @@ PROJECT_DIR = os.environ['PROJECT_DIR'] if 'PROJECT_DIR' in os.environ else os.p
 # -----------------
 OUTPUT_DIR = 'output'
 OUTPUT_DIR_PATH = os.path.join(PROJECT_DIR, OUTPUT_DIR)
+os.makedirs(OUTPUT_DIR_PATH, exist_ok=True)
+GRAPH_OUTPUT_FILE_NAME = "graph.pickle"
+GRAPH_OUTPUT_FILE_PATH = os.path.join(OUTPUT_DIR_PATH, GRAPH_OUTPUT_FILE_NAME)
 
 INPUT_DIR = "input"
 INPUT_PATH = os.path.join(PROJECT_DIR, INPUT_DIR)
@@ -30,6 +33,10 @@ GRAPH_TEMPLATE_FILE_NAME = "graph_template.html"
 TEMPLATE_FILE_NAME = "template.html"
 GRAPH_TEMPLATE_PATH = os.path.join(TEMPLATES_PATH, GRAPH_TEMPLATE_FILE_NAME)
 TEMPLATE_PATH = os.path.join(TEMPLATES_PATH, TEMPLATE_FILE_NAME)
+
+SCHEMA_DIR = "schemas"
+SCHEMA_DIR_PATH = os.path.join(PROJECT_DIR, SCHEMA_DIR)
+os.makedirs(SCHEMA_DIR_PATH, exist_ok=True)
 
 # -----------------
 # SYSTEM CONFIG
@@ -61,8 +68,10 @@ CONFIG_URL_PREFIX_TOKEN = "url_prefix"
 CRAWLER_SECTION = "CRAWLER"
 SEEDS_CONFIG_TOKEN = "seeds"
 VALID_WEBSITE_SUFFIXES = [".com", ".org", ".net", ".edu", ".gov", ".mil", ".io", ".co", ".uk", ".jp", ".kr", ".uk",
-                          ".in", ".de", ".fr", ".it", ".es", ".nl", ".cz", ".pl", ".ru", ".cn", ".ca", ".au", ".br", ".mx",
+                          ".in", ".de", ".fr", ".it", ".es", ".nl", ".cz", ".pl", ".ru", ".cn", ".ca", ".au", ".br",
+                          ".mx",
                           ]
+MAX_DEPTH_CONFIG_TOKEN = "max_depth"
 
 # -----------------
 # SCRAPER SECTION
@@ -71,3 +80,12 @@ SCRAPER_SECTION = "SCRAPER"
 EMAIL_SCRAPER_TOKEN = "email"
 LINKS_SCRAPER_TOKEN = "links"
 SCRAPERS_CONFIG_TOKEN = "scrapers"
+DATA_TOKEN = "data"
+WEIGHT_TOKEN = 'weight'
+SCRAPER_ID_TOKEN = 'scraper_id'
+
+# -----------------
+# SCHEMAS FILES
+# -----------------
+GRAPH_BUILD_SCHEMA_FILE_NAME = "build.yml"
+GRAPH_BUILD_SCHEMA_FILE_PATH = os.path.join(SCHEMA_DIR_PATH, GRAPH_BUILD_SCHEMA_FILE_NAME)
