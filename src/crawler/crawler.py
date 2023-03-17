@@ -8,7 +8,7 @@ from src.crawler.scraper.scraper import Scraper
 import src.utils.constants as consts
 from urllib.parse import urlsplit
 
-from src.data_structure.graph.web import WebGraph
+from src.data_structure.graph.ds import WebGraph
 from joblib import Parallel, delayed
 
 
@@ -23,6 +23,7 @@ class WebSpider:
         log.warning(f"Max depth is set to {self._max_depth}")
         self._graph = WebGraph()
         self._domains = set()
+        self._current_domain = None  # Placeholder for the current domain
 
     def crawl(self) -> WebGraph:
         session = requests.Session()
@@ -36,12 +37,10 @@ class WebSpider:
                     log.warning(f"Reached max depth of {self._max_depth}. Stop crawling")
                     break
 
-                domain = self._extract_domain(url)
+                self._current_domain = self._extract_domain(url)  # Use to extract the domain from the url
                 base_url = self._extract_base_url(url)  # Use to extract the base url from the url
 
                 if base_url not in self._visited:
-
-                    self._add_edge(domain, url, 0)  # Add an edge between the domain and the url
                     self._visited.add(base_url)
 
                     try:
@@ -59,6 +58,8 @@ class WebSpider:
                     )
 
                     for scraped_res in res:
+                        self._add_nodes(scraped_res=scraped_res)
+
                         if scraped_res.scraper_id == consts.LINKS_SCRAPER_TOKEN:
                             self._handle_scraped_links(url, scraped_res, depth)
                         else:
@@ -85,6 +86,17 @@ class WebSpider:
         v_of_edge = [data] if isinstance(data, str) else data
         [self._graph.add_edge(v, url, weight=weight) for v in v_of_edge]
 
+    def _add_nodes(self, scraped_res):
+        """
+        Add the nodes to the graph with the appropriate attributes
+        :param scraped_res: ScraperResult object. The scraped data
+        :return:
+        """
+        data = scraped_res.data if isinstance(scraped_res.data, (list, set)) else [scraped_res.data]
+        for v in data:
+            self._graph.add_node(v)
+            self._graph.add_domain_attr_to_node(v, self._current_domain)
+            self._graph.add_type_attr_to_node(v, scraped_res.scraper_id)
 
     def _handle_scraped_links(self, url, scraped_res, depth):
         """
@@ -124,7 +136,6 @@ class WebSpider:
             self._domains.add(domain)
 
         return domain
-
 
     @staticmethod
     def _is_valid_url(url: str) -> bool:

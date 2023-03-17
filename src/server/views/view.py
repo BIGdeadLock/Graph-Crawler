@@ -28,7 +28,6 @@ def get_graph():
         log.error(f"Error: {err}")
         resp = jsonify({"Error": err})
         resp.status_code = consts.RESP_SERVER_ERROR_VAL
-        log.info(f"response {resp}")
 
     return resp
 
@@ -42,5 +41,21 @@ def visualize_graph():
         log.error(f"Error: {err}")
         resp = jsonify({"Error": err})
         resp.status_code = consts.RESP_SERVER_ERROR_VAL
-        log.info(f"response {resp}")
+
+@view.route(uri.GET_TOP_URLS, methods=[consts.GET_TOKEN])
+@swag_from(f'{consts.TOP_N_SCHEMA_FILE_PATH}')
+def get_top_urls():
+    try:
+        number_of_urls_to_get = request.args.get('n', default=5, type=int)
+        ret = ServerInterface().get_top_urls(number_of_urls_to_get)
+        resp = jsonify(ret)
+        resp.status_code = consts.HTTP_OK
+
+    except Exception as e:
+        err = f"{e}"
+        log.error(f"Error: {err}")
+        resp = jsonify({"Error": err})
+        resp.status_code = consts.RESP_SERVER_ERROR_VAL
+
+    return resp
 

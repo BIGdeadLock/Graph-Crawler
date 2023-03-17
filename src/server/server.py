@@ -1,7 +1,6 @@
-import pickle
+
 from typing import List
 from joblib import Parallel, delayed
-
 from src.crawler.scraper.links import LinksScraper
 from src.crawler.scraper.scraper import Scraper
 from src.crawler.scraper import SCRAPERS
@@ -9,17 +8,15 @@ from src.utils.config import Config
 from src.utils.singleton import singleton
 from src.crawler.crawler import WebSpider
 import src.utils.constants as consts
-from src.data_structure.graph.web import combine_graphs
-import networkx as nx
-import jsonpickle
-from jinja2 import Template
-import logging as log
+from src.data_structure.graph.ds import combine_graphs, load_graph, save_graph, serialize_graph
+
 
 @singleton
 class ServerInterface(object):
     def __init__(self, **kwargs):
         self._config: Config = kwargs.get('config', Config())
         self.crawlers = None
+        self.graph = load_graph(consts.GRAPH_OUTPUT_FILE_PATH)
 
     async def build_graph(self, content: dict) -> dict:
         """
@@ -43,9 +40,9 @@ class ServerInterface(object):
         # # Start a separate thread for each crawler to start crawling from a different seed
         # n_jobs = self._config.get(consts.SYSTEM_SECTION, consts.NUMBER_OF_JOBS_CONFIG_TOKEN, return_as_string=False)
         # res = Parallel(n_jobs=n_jobs, backend="threading")(delayed(crawler.crawl)() for crawler in self.crawlers)
-        graph = combine_graphs(res)
-        self.save_graph(graph)
-        return nx.adjacency_data(graph)
+        self.graph = combine_graphs(res)
+        save_graph(consts.GRAPH_OUTPUT_FILE_PATH, self.graph)
+        return serialize_graph(self.graph)
 
     def get_scrapers(self, names: List[str]) -> List[Scraper]:
         """
@@ -65,28 +62,10 @@ class ServerInterface(object):
         scrapers.append(LinksScraper())
         return scrapers
 
-    @staticmethod
-    def save_graph(graph):
+    def get_top_urls(self, n=5) -> list:
+        """
+        Get the top urls from the crawlers for each domain
+        :return: list of dict {domain: List of urls}
+        """
+        return self.graph.get_top_n_for_each_domain(n)
 
-        # Save the graph as a pickle to be used later
-        with open(consts.GRAPH_OUTPUT_FILE_PATH, 'wb') as f:
-            pickle.dump(graph, f)
-
-        data = nx.readwrite.json_graph.node_link_data(graph)
-
-        # serialize the JSON data
-        json_str = jsonpickle.encode(data)
-
-        # load the template file
-        with open(consts.TEMPLATE_PATH, 'r') as f:
-            template_str = f.read()
-
-        # create a Jinja2 template
-        template = Template(template_str)
-
-        # render the template with the JSON data
-        html_str = template.render(json_str=json_str)
-
-        log.info(f"Saving graph to {consts.GRAPH_TEMPLATE_PATH}")
-        with open(consts.GRAPH_TEMPLATE_PATH, 'w') as f:
-            f.write(html_str)

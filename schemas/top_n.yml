@@ -1,0 +1,16 @@
+parameters:
+  - in: query
+    name: n
+    description: "The number of top nodes to return."
+    type: integer
+    example: 5
+    required: true
+
+responses:
+  200:
+    description: "A json of list of domain to top nodes objects."
+    schema:
+      type: array
+      items:
+        type: object
+        example: {"miet.ac.in": ["https://miet.ac.in/applied-science-engineering", "https://miet.ac.in/mpharm"]}
