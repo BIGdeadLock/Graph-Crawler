@@ -1,5 +1,5 @@
-# HW-Graph-Crawler
-Repo for the homework assignment of email to graph crawler.
+# Graph-Crawler
+Repo for the project of email to graph crawler.
 
 
 # Design Overview
