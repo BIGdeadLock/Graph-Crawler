@@ -107,3 +107,8 @@ the server you can use the swagger ui to test the api.
 
 # Visualization
 I added an additional endpoint for you to view the generated graph in your own browser. After creating the graph you can navigate to `/graph/visualize` to see the graph that was generated from the crawling.
+
+![image](https://user-images.githubusercontent.com/64005996/226120790-dc755f8c-3df4-47b4-bb19-745c9056b885.png)
+
+
+**NOTE:** If the graph is too big (more than 20 nodes), the rendering will be done to the top 20 nodes to not crash the browser.
