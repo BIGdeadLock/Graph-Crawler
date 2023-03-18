@@ -78,7 +78,7 @@ You have two options to run the program:
 
 ## Python way
 You can run the program using python. 1. Open a cmd on the project directory and follow the following steps:
-1. Run the command `python3 -m venv`
+1. Run the command `python -m venv venv`
 2. Depend on you OS, run the command `source venv/Scrips/activate` in Windows (in linux replace Scripts with bin)
 3. Run the command `python3 -r ./build-docker/requirements.txt
 4. Run the command `python3 main.py`
