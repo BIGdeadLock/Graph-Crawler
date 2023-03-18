@@ -38,7 +38,7 @@ The `type` attribute is either `url` or `email`. Each edge has a weight of 1 if 
 
 ![image](https://user-images.githubusercontent.com/64005996/226116477-8a410f4d-6593-44f1-ad0c-99433243889e.png)
 
-## Decoupelig
+## Decoupeling
 I tried to decouple the logic between classes as much as I could so that future development could be easier. Some thing I did:
 1. The data-structure is responsible with handaling the scraped data
 2. The crawler is only responsible for crawling the internet
