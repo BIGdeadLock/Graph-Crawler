@@ -64,12 +64,29 @@ about PageRank please refer to https://en.wikipedia.org/wiki/PageRank.
 3) The email address is common (not good) but is the only one in the url (not good) - The url will be ranked low
 4) The email address is common (not good) but is not the only one in the url (good) - The url will be ranked high
 
-# Docker
-For simple deployment I created a `docker-compose.yml` that will run the server and expose the port 5000. To run the docker, follow the steps:
+# Starting the service
+You have two options to run the program:
+1) Python with venv
+2) Docker
 
-1. Clone the project
-2. Open the project directory and run the command `cd build-docker`
-3. Run the command: `./run.sh build`
+## Python way
+You can run the program using python. 1. Open a cmd on the project directory and follow the following steps:
+1. Run the command `python3 -m venv`
+2. Depend on you OS, run the command `source venv/Scrips/activate` in Windows (in linux replace Scripts with bin)
+3. Run the command `python3 -r ./build-docker/requirements.txt
+4. Run the command `python3 main.py`
+
+**NOTE:** I assume you have python version >= 3.8 installed locally.
+
+## Docker
+For simple deployment I created a `docker-compose.yml` that will run the server and expose the port 5000. To run the docker, open a cmd on the project directory and follow the following steps::
+
+1. Run the command `cd build-docker`
+2. Run the command: `./run.sh build`
+3. To veryify it works, run the command: `docker ps` and look the crawler image as seen in:
+
+![image](https://user-images.githubusercontent.com/64005996/226116446-e577d18a-86bb-4dc6-819e-427e583b69e5.png)
+
 
 **NOTE:** To kill the docker run the command `./run.sh kill`
 
