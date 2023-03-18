@@ -172,6 +172,12 @@ def create_html_for_graph(graph: WebGraph, template_str: str):
     :param template_str: string. The html template
     :return: string. The html for the graph
     """
+    # If the graph is too big it will take too long to render it. We will only render the top 20 nodes
+    if len(graph.nodes) > 20:
+        ranking = graph.get_ranking()
+        top_20 = sorted(ranking, key=ranking.get, reverse=True)[:10]
+        graph = graph.subgraph(top_20)
+
     data = nx.readwrite.json_graph.node_link_data(graph)
 
     # serialize the JSON data

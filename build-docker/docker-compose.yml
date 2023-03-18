@@ -3,7 +3,7 @@ version: "1"
 services:
   crawler:
     image: crawler:c-ver1
-    command: /app/app-run.sh
+    command: python3 /app/main.py
     container_name: crawler
     restart: on-failure
     ports:
