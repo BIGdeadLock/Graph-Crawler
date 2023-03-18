@@ -13,7 +13,7 @@ PROJECT_DIR = os.environ['PROJECT_DIR'] if 'PROJECT_DIR' in os.environ else os.p
 OUTPUT_DIR = 'output'
 OUTPUT_DIR_PATH = os.path.join(PROJECT_DIR, OUTPUT_DIR)
 os.makedirs(OUTPUT_DIR_PATH, exist_ok=True)
-GRAPH_OUTPUT_FILE_NAME = "graph.pickle"
+GRAPH_OUTPUT_FILE_NAME = "graph.gml"
 GRAPH_OUTPUT_FILE_PATH = os.path.join(OUTPUT_DIR_PATH, GRAPH_OUTPUT_FILE_NAME)
 
 INPUT_DIR = "input"

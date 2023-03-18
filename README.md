@@ -30,37 +30,39 @@ As so, I created a data structure package with a graph package inside it. Each d
 Each data structure will have to implement the method `get_top_n_for_each_domain` that will return the top n nodes
 in each domain. This way the user can easily change the data structure without having to change the rest of the code.
 
-# Business Logic 
-In order to select the best ranking algorithm for selecting the best url in each domain I came up with the following
-possible business questions i.e. use cases:
-For a marketing campaign the company want to start scraping the interesting data and look for emails. 
-For the crawling process they want to select the best url in each domain. The best url is the one with the most
-email addresses in it or with the most links to other pages in the domain that host email addresses.
-
-Another possible use case is for a hacker who want to start a phishing campaign. He wants to crawl the internet
-and look for email addresses. He wants to select the best url in each domain. The best url is the one with the most
-email addresses in it or with the most links to other pages in the domain that host email addresses.
-
 ### Graph structure
 The graph structure is an undirected graph. Each node is a url or an email address. Each edge is a link between two nodes.
 Each node has two attributes: `domain` and `type`. The `domain` attribute is the domain of the url or the email address.
 The `type` attribute is either `url` or `email`. Each edge has a weight of 1 if one of the nodes is an email address and
 0 otherwise.
 
+
+# Business Logic 
+In order to state which URL is considered better and which is not, we need to define a ranking algorithm.
+First, there need to be a scoring system. The scoring system will be based on the number of email addresses each
+url has. But there can be cases where an email is considered junk, for example a random email address that is not
+real or a spam email. In order to solve this problem I used IDF to rank the email addresses. 
+
+### IDF
+IDF stands for Inverse Document Frequency. IDF is a ranking algorithm that is used to rank words in a document.
+If the word is rare in the corpus it will be ranked high. If the word is common in the corpus it will be ranked low.
+To read more about IDF please refer to https://en.wikipedia.org/wiki/Tf%E2%80%93idf.
+
+In our use case, if the email address is common it is considered junk, for example an email address of the university
+or a spam email address. If the email address is rare it is considered good, for example a real email address.
+
+
 ### Ranking Algorithm
-Several were tested as can be seen in the `EDA.ipynb` notebook:
-1. `cloness centrality` - Closeness centrality identifies a node's importance based on how close it is to all the other nodes in the graph
-2. `degree centrality` - Degree centrality defines the importance of a node based on the degree of that node. The higher the degree, the more crucial it becomes in the graph
-3. `betweenness centrality` - Betweenness centrality defines the importance of a node based on the number of shortest paths that pass through it
-4. `eigenvector centrality` - Eigenvector centrality defines the importance of a node based on the importance of its neighbors
-5. `pagerank` - PageRank defines the importance of a node based on the importance of the nodes that link to it
+We need a ranking algorithm that will be able to rank the urls based on the number of email addresses and the weights.
+For that purpose I used PageRank. PageRank is a ranking algorithm that is used to rank web pages. It is based on the
+number of links that point to a page and the number of links that point to the pages that point to the page. To read more
+about PageRank please refer to https://en.wikipedia.org/wiki/PageRank. 
 
-**Note:** For more information, please refer to https://www.turing.com/kb/graph-centrality-measures
-
-The best ranking algorithm was `eigenvecotr` as it had the most sense. The reason is that each edge between two nodes
-that one is an email node has a weight of 1. As a result, the eigenvecotr centrality will give a higher score to the node
-that has more email nodes connected to it, or more links to other pages in the domain that host email addresses.
-Using the method on the test website `https://miet.ac.in/` we can see that the best url is `https://miet.ac.in/applied-science-engineering`
+**Using both IDF and PageRank helps us address different cases:**
+1) The email address is rare (good) but is the only one in the url (not good) - The url will be ranked low
+2) The email address is rare (good) but is not the only one in the url (good) - The url will be ranked high
+3) The email address is common (not good) but is the only one in the url (not good) - The url will be ranked low
+4) The email address is common (not good) but is not the only one in the url (good) - The url will be ranked high
 
 # Docker
 For simple deployment I created a `docker-compose.yml` that will run the server and expose the port 8080.

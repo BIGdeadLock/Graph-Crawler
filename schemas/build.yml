@@ -30,13 +30,12 @@ responses:
     schema:
       type: object
       properties:
-          adjacency:
+          links:
             type: array
             items:
-              type: array
-              items:
-                type: object
-                example: {"id": "miet.ac.in","weight": 0}
+              type: object
+              example: {"source": "miet.ac.in", "target": "miet.ac.in", "weight": "0"}
+
           directed:
             description: "Whether the graph is directed or not."
             type: boolean
@@ -53,5 +52,5 @@ responses:
             type: array
             items:
               type: object
-              example: {"id": "miet.ac.in"}
+              example: {"id": "miet.ac.in", "domain": "miet.ac.in", "type":"url"}
 

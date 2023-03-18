@@ -25,7 +25,7 @@ def save_pickle(path, data):
     try:
         # Save the graph as a pickle to be used later
         with open(path, 'wb') as f:
-            pickle.dump(data, f)
+            pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
 
         log.info(f"Saving pickle file to {path}")
 

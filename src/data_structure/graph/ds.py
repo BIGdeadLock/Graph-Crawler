@@ -1,5 +1,5 @@
 import networkx as nx
-from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer, TfidfTransformer
 import pandas as pd
 from src.crawler.scraper.scraper import ScraperResult
 from src.utils.tools import load_pickle, save_pickle, is_valid_url, EMAIL_REGEX
@@ -8,6 +8,7 @@ import jsonpickle
 from jinja2 import Template
 import src.utils.constants as consts
 from src.utils.tools import extract_base_url
+from networkx.readwrite.json_graph import node_link_data
 
 class WebGraph(nx.Graph):
 
@@ -20,7 +21,7 @@ class WebGraph(nx.Graph):
 
     def add_scraped_data(self, scraped_res: ScraperResult):
         """
-        Add the scraped data to the graph
+        Add the scraped data to the graph. The graph will know how to handle the data.
         :param scraped_res: ScraperResult. The scraped data to add
         :return:
         """
@@ -141,7 +142,7 @@ def combine_graphs(graphs: list) -> WebGraph:
 
 
 def serialize_graph(graph):
-    return nx.adjacency_data(graph)
+    return node_link_data(graph)
 
 
 def load_graph(path: str) -> WebGraph:
@@ -155,12 +156,12 @@ def load_graph(path: str) -> WebGraph:
 
 def save_graph(path: str, graph: WebGraph):
     """
-    Save the graph to the path
-    :param path:
-    :param graph:
+    Save the graph to the path and create a html file for the graph
+    :param path: string. The path to save the graph to
+    :param graph: Graph object
     :return:
     """
-    save_pickle(path, graph)
+    nx.write_gml(graph, path)
     create_html_for_graph(graph, consts.TEMPLATE_PATH)
 
 
