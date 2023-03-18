@@ -36,6 +36,13 @@ Each node has two attributes: `domain` and `type`. The `domain` attribute is the
 The `type` attribute is either `url` or `email`. Each edge has a weight of 1 if one of the nodes is an email address and
 0 otherwise.
 
+![image](https://user-images.githubusercontent.com/64005996/226116477-8a410f4d-6593-44f1-ad0c-99433243889e.png)
+
+## Decoupelig
+I tried to decouple the logic between classes as much as I could so that future development could be easier. Some thing I did:
+1. The data-structure is responsible with handaling the scraped data
+2. The crawler is only responsible for crawling the internet
+3. The scrapers are responsible for only scraped the data passed from the crawler.
 
 # Business Logic 
 In order to state which URL is considered better and which is not, we need to define a ranking algorithm.
@@ -93,3 +100,6 @@ For simple deployment I created a `docker-compose.yml` that will run the server 
 # API Documentation
 This project is using swagger for api documentation. Available at `http://localhost:5000/apidocs`. After running
 the server you can use the swagger ui to test the api.
+
+# Visualization
+I added an additional endpoint for you to view the generated graph in your own browser. After creating the graph you can navigate to `/graph/visualize` to see the graph that was generated from the crawling.
