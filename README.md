@@ -19,8 +19,8 @@ The developer can easily add new scrapers by implementing the Scraper interface 
 `scraper.py` and adding the scraper to the factory by adding it to the `SCRAPERS` list in `scraper\__init__.py`.
 
 ## Crawler
-The `crawler.py` is class with a recursive function that will crawl the internet starting from the given url.
-to speed up the crawling process I used a thread pool to run the scraper in parallel.
+The `crawler.py` is a class with a function that will crawl the internet starting from the given url.
+to speed up the crawling process I used a thread pool to run the scrapers in a concurrent fashion.
 Each new crawler was started with a different seed which was given by the user.
 
 ## Datastructures - Graph
