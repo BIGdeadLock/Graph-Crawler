@@ -88,9 +88,10 @@ You can run the program using python. 1. Open a cmd on the project directory and
 ## Docker
 For simple deployment I created a `docker-compose.yml` that will run the server and expose the port 5000. To run the docker, open a cmd on the project directory and follow the following steps::
 
-1. Run the command `cd build-docker`
-2. Run the command: `./run.sh build`
-3. To veryify it works, run the command: `docker ps` and look the crawler image as seen in:
+1. In the `./build-dcoker/run.sh` file, fill in the variable PASSWORD with your sudo password for the script to run.
+2. Run the command `cd build-docker`
+3. Run the command: `./run.sh build`
+4. To veryify it works, run the command: `docker ps` and look the crawler image as seen in:
 
 ![image](https://user-images.githubusercontent.com/64005996/226116446-e577d18a-86bb-4dc6-819e-427e583b69e5.png)
 
