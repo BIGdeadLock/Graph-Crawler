@@ -1,0 +1,15 @@
+version: "1"
+
+services:
+  crawler:
+    image: crawler:c-ver1
+    command: /app/app-run.sh
+    container_name: crawler
+    restart: on-failure
+    ports:
+      - "5000:5000"
+    volumes:
+    - ./logs:/app/logs
+    - ./store:/app/store
+    environment:
+      SERVER_SERVER_PORT: 5000
