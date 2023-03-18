@@ -99,8 +99,11 @@ For simple deployment I created a `docker-compose.yml` that will run the server 
 **NOTE:** To kill the docker run the command `./run.sh kill`
 
 # API Documentation
-This project is using swagger for api documentation. Available at `http://localhost:5000/apidocs`. After running
+This project is using swagger for api documentation. Available at [http://localhost:5000/apidocs](http://localhost:5000/apidocs/#/default/post_graph_build). After running
 the server you can use the swagger ui to test the api.
+
+![image](https://user-images.githubusercontent.com/64005996/226118961-4dd4f78d-bd83-4b65-a9f6-630dd5124d80.png)
+
 
 # Visualization
 I added an additional endpoint for you to view the generated graph in your own browser. After creating the graph you can navigate to `/graph/visualize` to see the graph that was generated from the crawling.
