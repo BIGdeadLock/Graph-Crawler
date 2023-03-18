@@ -1,7 +1,7 @@
 
 from typing import List
 from joblib import Parallel, delayed
-from src.crawler.scraper.links import LinksScraper
+from src.crawler.scraper.url import URLsScraper
 from src.crawler.scraper.scraper import Scraper
 from src.crawler.scraper import SCRAPERS
 from src.utils.config import Config
@@ -59,7 +59,7 @@ class ServerInterface(object):
                 if scraper.get_id() == scraper_name:
                     scrapers.append(scraper)
 
-        scrapers.append(LinksScraper())
+        scrapers.append(URLsScraper())
         return scrapers
 
     def get_top_urls(self, n=5) -> list:

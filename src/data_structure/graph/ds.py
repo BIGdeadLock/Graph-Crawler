@@ -1,17 +1,43 @@
 import networkx as nx
-from src.utils.tools import load_pickle, save_pickle
+from sklearn.feature_extraction.text import TfidfVectorizer
+import pandas as pd
+from src.crawler.scraper.scraper import ScraperResult
+from src.utils.tools import load_pickle, save_pickle, is_valid_url, EMAIL_REGEX
 import logging as log
 import jsonpickle
 from jinja2 import Template
 import src.utils.constants as consts
+from src.utils.tools import extract_base_url
 
-
-class WebGraph(nx.DiGraph):
+class WebGraph(nx.Graph):
 
     def __init__(self):
         super().__init__()
-        self._node_counter = 0
-        self._edge_counter = 0
+        self._corpus = []
+        self._urls = []
+        self._emails = []
+        self._urls_tf_idf_index = {}
+
+    def add_scraped_data(self, scraped_res: ScraperResult):
+        """
+        Add the scraped data to the graph
+        :param scraped_res: ScraperResult. The scraped data to add
+        :return:
+        """
+        for data in scraped_res.data:
+            v = extract_base_url(scraped_res.url)
+            self.add_node(v, domain=scraped_res.domain, type=consts.URL_TYPE_TOKEN)
+
+            if scraped_res.type == consts.EMAIL_TYPE_TOKEN:
+                u = data
+                self._emails.append(u)
+                self.add_node(u, domain=scraped_res.domain, type=consts.EMAIL_TYPE_TOKEN)
+            else:
+                u = extract_base_url(data)
+                self._urls.append(u)
+                self.add_node(u, domain=scraped_res.domain, type=consts.URL_TYPE_TOKEN)
+
+            self.add_edge(u, v, weight=0)
 
     def add_domain_attr_to_node(self, node: str, domain: str):
         """
@@ -37,7 +63,8 @@ class WebGraph(nx.DiGraph):
         :param n: int. The number of nodes to return
         :return: list of dict: {domain: List of nodes and their rank in the domain}
         """
-        ranking = self._get_ranking()
+        self._add_weights_scores()
+        ranking = self.get_ranking()
         clusters = self._get_domains_cluster()
         top_n = []
         for domain in clusters:
@@ -45,12 +72,47 @@ class WebGraph(nx.DiGraph):
 
         return top_n
 
-    def _get_ranking(self) -> dict:
+    def get_ranking(self) -> dict:
         """
-        Get the ranking of the nodes
+        Generate the ranking scores for each node in the graph. The score is the pagerank score
         :return: dict: {node: rank}
         """
-        return nx.eigenvector_centrality(self, weight='weight', max_iter=50000)
+        return nx.pagerank(self, weight='weight')
+
+    def _add_weights_scores(self):
+        """
+        Add the weights to the edges. The score is the tf-idf score of the email address in the url
+        :return:
+        """
+        vectorizer = TfidfVectorizer(use_idf=True, lowercase=False, smooth_idf=True, token_pattern=EMAIL_REGEX)  # No lowercase to preserve the emails
+        if not self._corpus:
+            self._build_corpus()
+
+        tfidf_matrix = vectorizer.fit_transform(self._corpus)
+        tfidf_df = pd.DataFrame(tfidf_matrix.toarray(), columns=vectorizer.get_feature_names_out())
+
+        # add tf-idf scores to the edge weights between emails and urls
+        for url, idx in self._urls_tf_idf_index.items():
+            for email in self.neighbors(url):
+                try:
+                    self.edges[url, email]['weight'] = tfidf_df.loc[idx, email].item()
+                except KeyError:
+                    # The neighbor is an url and not an email
+                    pass
+
+    def _build_corpus(self):
+        self._urls = [n for n, data in self.nodes(data=True) if data and data['type'] == consts.URL_TYPE_TOKEN]
+        idx = 0 # The index of the url in the corpus
+        for url in self._urls:
+            # Get all the neighbors for that url and check for emails
+            url_emails = [n for n in self.neighbors(url) if self.nodes[n]['type'] == consts.EMAIL_TYPE_TOKEN]
+            if url_emails:
+                # Some urls are connected to only other urls meaning that no emails were found in the url
+                self._corpus.append(" ".join(url_emails))
+                # Save the index of the url in the corpus
+                self._urls_tf_idf_index[url] = idx
+                idx += 1 # Increment the index only for email urls
+
 
     def _get_domains_cluster(self) -> dict:
         """
@@ -59,7 +121,7 @@ class WebGraph(nx.DiGraph):
         """
         clusters = {}
         for node in self.nodes:
-            if "domain" in self.nodes[node]:
+            if "domain" in self.nodes[node] and self.nodes[node]['type'] == consts.URL_TYPE_TOKEN:
                 clusters.setdefault(self.nodes[node]['domain'], set()).add(node)
 
         return clusters
@@ -77,8 +139,10 @@ def combine_graphs(graphs: list) -> WebGraph:
 
     return combined_graph
 
+
 def serialize_graph(graph):
     return nx.adjacency_data(graph)
+
 
 def load_graph(path: str) -> WebGraph:
     """
@@ -90,7 +154,6 @@ def load_graph(path: str) -> WebGraph:
 
 
 def save_graph(path: str, graph: WebGraph):
-
     """
     Save the graph to the path
     :param path:
@@ -99,6 +162,7 @@ def save_graph(path: str, graph: WebGraph):
     """
     save_pickle(path, graph)
     create_html_for_graph(graph, consts.TEMPLATE_PATH)
+
 
 def create_html_for_graph(graph: WebGraph, template_str: str):
     """

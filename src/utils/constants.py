@@ -77,8 +77,8 @@ MAX_DEPTH_CONFIG_TOKEN = "max_depth"
 # SCRAPER SECTION
 # -----------------
 SCRAPER_SECTION = "SCRAPER"
-EMAIL_SCRAPER_TOKEN = "email"
-LINKS_SCRAPER_TOKEN = "links"
+EMAIL_TYPE_TOKEN = "email"
+URL_TYPE_TOKEN = "url"
 SCRAPERS_CONFIG_TOKEN = "scrapers"
 DATA_TOKEN = "data"
 WEIGHT_TOKEN = 'weight'
