@@ -65,7 +65,13 @@ about PageRank please refer to https://en.wikipedia.org/wiki/PageRank.
 4) The email address is common (not good) but is not the only one in the url (good) - The url will be ranked high
 
 # Docker
-For simple deployment I created a `docker-compose.yml` that will run the server and expose the port 8080.
+For simple deployment I created a `docker-compose.yml` that will run the server and expose the port 5000. To run the docker, follow the steps:
+
+1. Clone the project
+2. Open the project directory and run the command `cd build-docker`
+3. Run the command: `./run.sh build`
+
+**NOTE:** To kill the docker run the command `./run.sh kill`
 
 # API Documentation
 This project is using swagger for api documentation. Available at `http://localhost:5000/apidocs`. After running
