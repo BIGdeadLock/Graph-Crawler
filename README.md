@@ -3,6 +3,10 @@ Repo for the project of email to graph crawler.
 
 
 # Design Overview
+Schema of high level design:
+
+![image](https://user-images.githubusercontent.com/64005996/226172833-bc4ea31a-db37-413e-8c38-e013fb14e87b.png)
+
 
 ## Configuration
 Using a configuration file we will be able to dynamically change the behavior of the crawler.
