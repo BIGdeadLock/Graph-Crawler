@@ -3,6 +3,12 @@ import pickle
 import logging as log
 from urllib.parse import urlsplit
 import re
+import urllib3
+from requests.adapters import HTTPAdapter
+import httpx
+import requests
+from httpx import Limits
+
 import src.utils.constants as consts
 
 EMAIL_REGEX = r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+"  # Get all string in the format of email
@@ -77,3 +83,19 @@ def is_valid_url(url: str) -> bool:
         return True
 
     return False
+
+def req_with_retry(max_retries) -> requests.Session:
+    session = requests.Session()
+    retry = urllib3.Retry(
+        total=max_retries,
+        read=max_retries,
+        connect=max_retries,
+        backoff_factor=0.5,
+        raise_on_status=False,
+    )
+    adapter = HTTPAdapter(max_retries=retry)
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+    return session
+
+
