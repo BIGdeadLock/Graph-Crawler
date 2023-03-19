@@ -20,7 +20,7 @@ def get_graph():
         content = request.json
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        ret = loop.run_until_complete(ServerInterface().build_graph(content))
+        ret = asyncio.run(ServerInterface().build_graph(content))
         resp = jsonify(ret)
         resp.status_code = consts.HTTP_OK
     except Exception as e:

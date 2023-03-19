@@ -1,14 +1,16 @@
-
-from typing import List
+import asyncio
+from typing import List, Dict
 from joblib import Parallel, delayed
-from src.crawler.scraper.url import URLsScraper
-from src.crawler.scraper.scraper import Scraper
-from src.crawler.scraper import SCRAPERS
+
+from src.data_structure.graph.callbacks.callback import Callback
+from src.crawler.filter import UrlFilter
+from src.data_structure.graph.callbacks import CALLBACKS
 from src.utils.config import Config
 from src.utils.singleton import singleton
 from src.crawler.crawler import WebSpider
 import src.utils.constants as consts
 from src.data_structure.graph.ds import combine_graphs, load_graph, save_graph, serialize_graph
+import logging as log
 
 
 @singleton
@@ -16,7 +18,11 @@ class ServerInterface(object):
     def __init__(self, **kwargs):
         self._config: Config = kwargs.get('config', Config())
         self.crawlers = None
-        self.graph = load_graph(consts.GRAPH_OUTPUT_FILE_PATH)
+        try:
+            self.graph = load_graph(consts.GRAPH_OUTPUT_FILE_PATH)
+        except Exception:
+            self.graph = None
+        self.loop: asyncio.AbstractEventLoop = asyncio.new_event_loop()
 
     async def build_graph(self, content: dict) -> dict:
         """
@@ -30,37 +36,46 @@ class ServerInterface(object):
             # If the user didn't specify any seeds, use the config default to start the crawling
             seeds = self._config.get_seeds()
 
-        max_depth = self._config.get(consts.CRAWLER_SECTION, consts.MAX_DEPTH_CONFIG_TOKEN, return_as_string=False)
+        nodes_types = content.get(consts.REQUEST_NODES_TOKEN, None)
+        callbacks = self.get_callbacks(nodes_types=nodes_types)
 
-        scrapers_name = content.get(consts.SCRAPERS_CONFIG_TOKEN, None)
-        scrapers = self.get_scrapers(names=scrapers_name)
+        self.crawlers = [
+            WebSpider(callbacks=callbacks,
+                      url_filter=UrlFilter(self._config.get_section(consts.FILTERS_SECTION)),
+                      start_seed=seed, config=self._config)
+            for seed in seeds]
 
-        self.crawlers = [WebSpider(scrapers=scrapers, start_seed=seed, max_depth=max_depth) for seed in seeds]
-        res = [crawler.crawl() for crawler in self.crawlers]
         # # Start a separate thread for each crawler to start crawling from a different seed
-        # n_jobs = self._config.get(consts.SYSTEM_SECTION, consts.NUMBER_OF_JOBS_CONFIG_TOKEN, return_as_string=False)
-        # res = Parallel(n_jobs=n_jobs, backend="threading")(delayed(crawler.crawl)() for crawler in self.crawlers)
+        n_jobs = self._config.get(consts.SYSTEM_SECTION, consts.NUMBER_OF_JOBS_CONFIG_TOKEN, return_as_string=False)
+        res = Parallel(n_jobs=n_jobs, backend="threading")(
+            delayed(self._async_crawling)(self.loop, crawler=crawler) for crawler in self.crawlers
+        )
+        # tasks = [await crawler.crawl() for crawler in self.crawlers]
+        # res = await asyncio.gather(*tasks)
+
         self.graph = combine_graphs(res)
         save_graph(consts.GRAPH_OUTPUT_FILE_PATH, self.graph)
         return serialize_graph(self.graph)
 
-    def get_scrapers(self, names: List[str]) -> List[Scraper]:
+    def _async_crawling(self, loop: asyncio.AbstractEventLoop, **kwargs):
+        asyncio.set_event_loop(loop)
+        try:
+            crawler = kwargs.get('crawler')
+            asyncio.run(crawler.crawl())
+        except Exception as e:
+            log.error('Crawling loop got exception.', e)
+
+    def get_callbacks(self, nodes_types: Dict[List[str]]) -> List[Callback]:
         """
-       Dynamically create scrapers based on the config file
+       Dynamically create callbacks from the given nodes types of the user or configuration
        :return: List of scrapers all inheriting from Scraper
        """
         # If the user didn't specify any scrapers, use the config default
-        if not names:
-            names = self._config.get_scrapers()
+        if not nodes_types:
+            nodes_types = self._config.get_callbacks()
 
-        scrapers = []
-        for scraper_name in names:
-            for scraper in SCRAPERS:
-                if scraper.get_id() == scraper_name:
-                    scrapers.append(scraper)
+        return [CALLBACKS[n_type] for n_type in nodes_types if n_type in CALLBACKS]
 
-        scrapers.append(URLsScraper())
-        return scrapers
 
     def get_top_urls(self, n=5) -> list:
         """
@@ -68,4 +83,3 @@ class ServerInterface(object):
         :return: list of dict {domain: List of urls}
         """
         return self.graph.get_top_n_for_each_domain(n)
-

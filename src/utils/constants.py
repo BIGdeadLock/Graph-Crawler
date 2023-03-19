@@ -72,17 +72,45 @@ VALID_WEBSITE_SUFFIXES = [".com", ".org", ".net", ".edu", ".gov", ".mil", ".io",
                           ".mx",
                           ]
 MAX_DEPTH_CONFIG_TOKEN = "max_depth"
+TIMEOUT_CONFIG_TOKEN = "timeout"
+MAX_RETIRES_CONFIG_TOKEN = "max_retries"
+MAX_REQUEST_CONFIG_TOKEN = "max_requests"
+
+IGNORED_EXTENSIONS = [
+    # archives
+    '7z', '7zip', 'bz2', 'rar', 'tar', 'tar.gz', 'xz', 'zip',
+    # images
+    'mng', 'pct', 'bmp', 'gif', 'jpg', 'jpeg', 'png', 'pst', 'psp', 'tif', 'tiff', 'ai', 'drw', 'dxf', 'eps', 'ps',
+    'svg', 'cdr', 'ico',
+    # audio
+    'mp3', 'wma', 'ogg', 'wav', 'ra', 'aac', 'mid', 'au', 'aiff',
+    # video
+    '3gp', 'asf', 'asx', 'avi', 'mov', 'mp4', 'mpg', 'qt', 'rm', 'swf', 'wmv', 'm4a', 'm4v', 'flv', 'webm',
+    # office suites
+    'xls', 'xlsx', 'ppt', 'pptx', 'pps', 'doc', 'docx', 'odt', 'ods', 'odg', 'odp',
+    # other
+    'css', 'pdf', 'exe', 'bin', 'rss', 'dmg', 'iso', 'apk',
+]
 
 # -----------------
-# SCRAPER SECTION
-# -----------------
-SCRAPER_SECTION = "SCRAPER"
+# GRAPH SECTION
+GRAPH_SECTION = "GRAPH"
 EMAIL_TYPE_TOKEN = "email"
 URL_TYPE_TOKEN = "url"
-SCRAPERS_CONFIG_TOKEN = "scrapers"
+GRAPH_CALLBACKS_TOKEN = "graph"
+REQUEST_NODES_TOKEN = "callbacks"
 DATA_TOKEN = "data"
 WEIGHT_TOKEN = 'weight'
-SCRAPER_ID_TOKEN = 'scraper_id'
+CALLBACK_ID_TOKEN = 'callback_id'
+GRAPH_NODES_CONFIG_TOKEN = "nodes"
+
+# -----------------
+# FILTERS SECTION
+# -----------------
+FILTERS_SECTION = "FILTERS"
+DOMAIN_FILTER = "domain"
+SUBDOMAIN_FILTER = "subdomain"
+PATTERN_RULES = "pattern_rules"
 
 # -----------------
 # SCHEMAS FILES

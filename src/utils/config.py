@@ -30,6 +30,18 @@ class Config(object):
             log.error(f"Error: {e}")
             raise e
 
+    def get_section(self, section: str):
+        try:
+            if self.config.has_section(section):
+                return self.config[section]
+            else:
+                log.warning(f"Section: {section} not found in config file")
+                return None
+
+        except Exception as e:
+            log.error(f"Could not get section: {section}. Error: {e}")
+            raise ConfigError
+
     def get(self, section: str, param: str, default_value=None, return_as_string: bool = True):
         try:
             if self.config.has_option(section, param):
@@ -54,10 +66,13 @@ class Config(object):
         res = seeds.replace(" ", "").replace("\n", "").split(",")
         return res
 
-    def get_scrapers(self):
-        scrapers = self.get(section=consts.CRAWLER_SECTION, param=consts.SCRAPERS_CONFIG_TOKEN, default_value="")
-        if not scrapers:
+    def get_nodes_types(self):
+        """
+        Get the nodes types from the config file.
+        :return: List: [email, ...]
+        """
+        graph_callbacks = self.get(section=consts.GRAPH_SECTION, param=consts.GRAPH_NODES_CONFIG_TOKEN, default_value="")
+        if not graph_callbacks:
             return []
 
-        res = scrapers.replace(" ", "").replace("\n", "").split(",")
-        return res
+        return graph_callbacks.replace(" ", "").replace("\n", "").split(",")

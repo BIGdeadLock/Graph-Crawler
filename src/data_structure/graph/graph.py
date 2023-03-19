@@ -1,44 +1,39 @@
 import networkx as nx
-from sklearn.feature_extraction.text import TfidfVectorizer, TfidfTransformer
+from sklearn.feature_extraction.text import TfidfVectorizer
 import pandas as pd
-from src.crawler.scraper.scraper import ScraperResult
-from src.utils.tools import load_pickle, save_pickle, is_valid_url, EMAIL_REGEX
+from src.data_structure.graph.callbacks.callback import CallbackResult
+from src.utils.tools import EMAIL_REGEX
 import logging as log
 import jsonpickle
 from jinja2 import Template
 import src.utils.constants as consts
 from src.utils.tools import extract_base_url
 from networkx.readwrite.json_graph import node_link_data
+from src.data_structure.graph.utils import Mediator
 
 class WebGraph(nx.Graph):
 
-    def __init__(self):
+    def __init__(self, callbacks = None):
         super().__init__()
         self._corpus = []
-        self._urls = []
-        self._emails = []
+        self._cache = {}
         self._urls_tf_idf_index = {}
+        self._callbacks = callbacks or []
 
-    def add_scraped_data(self, scraped_res: ScraperResult):
+    @Mediator()
+    def add(self, new_data: CallbackResult):
         """
         Add the scraped data to the graph. The graph will know how to handle the data.
         :param scraped_res: ScraperResult. The scraped data to add
         :return:
         """
-        for data in scraped_res.data:
-            v = extract_base_url(scraped_res.url)
-            self.add_node(v, domain=scraped_res.domain, type=consts.URL_TYPE_TOKEN)
-
-            if scraped_res.type == consts.EMAIL_TYPE_TOKEN:
-                u = data
-                self._emails.append(u)
-                self.add_node(u, domain=scraped_res.domain, type=consts.EMAIL_TYPE_TOKEN)
-            else:
-                u = extract_base_url(data)
-                self._urls.append(u)
-                self.add_node(u, domain=scraped_res.domain, type=consts.URL_TYPE_TOKEN)
-
-            self.add_edge(u, v, weight=0)
+        data = new_data.data
+        v = extract_base_url(new_data.url)
+        u = data
+        self.add_node(v, domain=new_data.domain, type=consts.URL_TYPE_TOKEN)
+        self.add_node(u, domain=new_data.domain, type=new_data.type)
+        self._cache.setdefault(new_data.type, set()).add(u)
+        self.add_edge(u, v, weight=0)
 
     def add_domain_attr_to_node(self, node: str, domain: str):
         """
@@ -94,22 +89,22 @@ class WebGraph(nx.Graph):
 
         # add tf-idf scores to the edge weights between emails and urls
         for url, idx in self._urls_tf_idf_index.items():
-            for email in self.neighbors(url):
+            for neighbor in self.neighbors(url):
                 try:
-                    self.edges[url, email]['weight'] = tfidf_df.loc[idx, email].item()
+                    self.edges[url, neighbor]['weight'] = tfidf_df.loc[idx, neighbor].item()
                 except KeyError:
                     # The neighbor is an url and not an email
                     pass
 
     def _build_corpus(self):
-        self._urls = [n for n, data in self.nodes(data=True) if data and data['type'] == consts.URL_TYPE_TOKEN]
-        idx = 0 # The index of the url in the corpus
-        for url in self._urls:
-            # Get all the neighbors for that url and check for emails
-            url_emails = [n for n in self.neighbors(url) if self.nodes[n]['type'] == consts.EMAIL_TYPE_TOKEN]
-            if url_emails:
+        urls = self._cache[consts.URL_TYPE_TOKEN]
+        idx = 0  # The index of the url in the corpus
+        for url in urls:
+            # Get all the neighbors for that url that are not of type URL
+            neighbors = [n for n in self.neighbors(url) if self.nodes[n]['type'] != consts.URL_TYPE_TOKEN]
+            if neighbors:
                 # Some urls are connected to only other urls meaning that no emails were found in the url
-                self._corpus.append(" ".join(url_emails))
+                self._corpus.append(" ".join(neighbors))
                 # Save the index of the url in the corpus
                 self._urls_tf_idf_index[url] = idx
                 idx += 1 # Increment the index only for email urls
@@ -151,7 +146,7 @@ def load_graph(path: str) -> WebGraph:
     :param path: string. The path to load the graph from
     :return: Graph object
     """
-    return load_pickle(path)
+    return nx.read_gml(path)
 
 
 def save_graph(path: str, graph: WebGraph):
