@@ -1,5 +1,5 @@
 import networkx as nx
-from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 import pandas as pd
 from src.data_structure.graph.callbacks.callback import CallbackResult
 from src.utils.tools import EMAIL_REGEX
@@ -9,18 +9,29 @@ from jinja2 import Template
 import src.utils.constants as consts
 from src.utils.tools import extract_base_url
 from networkx.readwrite.json_graph import node_link_data
-from src.data_structure.graph.utils import Mediator
+from src.data_structure.graph.utils import Normalizer
+from src.utils.tools import save_pickle, load_pickle
 
 class WebGraph(nx.Graph):
 
-    def __init__(self, callbacks = None):
+    def __init__(self, callbacks = None, alpha = 0.8):
         super().__init__()
-        self._corpus = []
+        self._name_corpus, self._type_corpus = [], []
         self._cache = {}
         self._urls_tf_idf_index = {}
         self._callbacks = callbacks or []
+        self._proba = None
+        self._alpha = alpha
 
-    @Mediator()
+    @property
+    def cache(self):
+        return self._cache
+
+    @cache.setter
+    def cache(self, value):
+        self._cache = value
+
+    @Normalizer()
     def add(self, new_data: CallbackResult):
         """
         Add the scraped data to the graph. The graph will know how to handle the data.
@@ -68,6 +79,16 @@ class WebGraph(nx.Graph):
 
         return top_n
 
+    def merge_graph(self, graph):
+        """
+        Merge the graph with the current graph. The cache will be merged as well
+        :param graph: WebGraph. The graph to merge with
+        :return:
+        """
+        self.add_nodes_from(graph.nodes(data=True))
+        self.add_edges_from(graph.edges(data=True))
+        self._cache = {**self._cache, **graph.cache}
+
     def get_ranking(self) -> dict:
         """
         Generate the ranking scores for each node in the graph. The score is the pagerank score
@@ -81,17 +102,23 @@ class WebGraph(nx.Graph):
         :return:
         """
         vectorizer = TfidfVectorizer(use_idf=True, lowercase=False, smooth_idf=True, token_pattern=EMAIL_REGEX)  # No lowercase to preserve the emails
-        if not self._corpus:
+        if not self._name_corpus:
             self._build_corpus()
 
-        tfidf_matrix = vectorizer.fit_transform(self._corpus)
+        tfidf_matrix = vectorizer.fit_transform(self._name_corpus)
         tfidf_df = pd.DataFrame(tfidf_matrix.toarray(), columns=vectorizer.get_feature_names_out())
 
         # add tf-idf scores to the edge weights between emails and urls
         for url, idx in self._urls_tf_idf_index.items():
             for neighbor in self.neighbors(url):
                 try:
-                    self.edges[url, neighbor]['weight'] = tfidf_df.loc[idx, neighbor].item()
+                    node_type = self.nodes[neighbor]['type']
+                    proba_score = 0
+                    if node_type != consts.URL_TYPE_TOKEN:
+                        proba_score = self._proba[neighbor]
+
+                    total_score = tfidf_df.loc[idx, neighbor].item() * self._alpha + proba_score * (1 - self._alpha)
+                    self.edges[url, neighbor]['weight'] = total_score
                 except KeyError:
                     # The neighbor is an url and not an email
                     pass
@@ -104,11 +131,22 @@ class WebGraph(nx.Graph):
             neighbors = [n for n in self.neighbors(url) if self.nodes[n]['type'] != consts.URL_TYPE_TOKEN]
             if neighbors:
                 # Some urls are connected to only other urls meaning that no emails were found in the url
-                self._corpus.append(" ".join(neighbors))
+                self._name_corpus.append(" ".join([n.split("@")[0] for n in neighbors]))  # Add the name of the email to the corpus
+                self._type_corpus.append(" ".join([n.split("@")[1] for n in neighbors]))  # Add the type of the email to the corpus
                 # Save the index of the url in the corpus
                 self._urls_tf_idf_index[url] = idx
                 idx += 1 # Increment the index only for email urls
 
+    def _create_email_type_probabilities_distribution(self) -> pd.Series:
+        """
+        Build the probability distribution for the email types
+        :return:
+        """
+        vectorizer = CountVectorizer(token_pattern="[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+")
+        count_matrix = vectorizer.fit_transform(self._type_corpus)
+        count_df = pd.DataFrame(count_matrix.toarray(), columns=vectorizer.get_feature_names_out())
+
+        self._proba = count_df.sum() / count_df.sum().sum()
 
     def _get_domains_cluster(self) -> dict:
         """
@@ -125,13 +163,13 @@ class WebGraph(nx.Graph):
 
 def combine_graphs(graphs: list) -> WebGraph:
     """
-    Combine the graphs from the different processes into one graph
+    Combine the graphs from the different processes into one graph. The cache will be the union of all the caches
     :param graphs: list of graphs
-    :return: combined graph
+    :return: WebGraph: combined graph
     """
     combined_graph = WebGraph()
     for graph in graphs:
-        combined_graph = nx.compose(combined_graph, graph)
+        combined_graph.merge_graph(graph)
 
     return combined_graph
 
@@ -146,7 +184,7 @@ def load_graph(path: str) -> WebGraph:
     :param path: string. The path to load the graph from
     :return: Graph object
     """
-    return nx.read_gml(path)
+    return load_pickle(path)
 
 
 def save_graph(path: str, graph: WebGraph):
@@ -156,7 +194,8 @@ def save_graph(path: str, graph: WebGraph):
     :param graph: Graph object
     :return:
     """
-    nx.write_gml(graph, path)
+    nx.write_gml(graph, path.replace(".pkl", ".gml"))
+    save_pickle(path, graph)
     create_html_for_graph(graph, consts.TEMPLATE_PATH)
 
 

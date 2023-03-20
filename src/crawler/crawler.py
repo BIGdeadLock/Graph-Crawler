@@ -4,7 +4,7 @@ from typing import List
 import requests
 import logging as log
 
-from src.data_structure.graph.callbacks.callback import Callback
+from src.data_structure.graph.callbacks.callback import GraphCallback
 from src.crawler.filter import UrlFilter
 from src.utils.config import Config
 from src.utils.tools import clean_url, req_with_retry
@@ -14,7 +14,7 @@ from src.data_structure.graph.graph import WebGraph
 
 
 class WebSpider:
-    def __init__(self, callbacks: List[Callback], url_filter: UrlFilter, start_seed: str, config: Config):
+    def __init__(self, callbacks: List[GraphCallback], url_filter: UrlFilter, start_seed: str, config: Config):
         self._callbacks = callbacks
         self._filter = url_filter
         self._start_seed = clean_url(start_seed)
@@ -46,6 +46,7 @@ class WebSpider:
                     "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36",
                     "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
                     "accept-language": "en-US;en;q=0.9",
+                    "accept-encoding": "gzip, deflate, br", # we should use encoding to save bandwidth
                 }
             )
             return response
@@ -74,7 +75,6 @@ class WebSpider:
                 else:
                     failures.append(response)
 
-        log.info(f"Found {len(responses)} responses and {len(failures)} failures")
         return responses
 
     def parse_for_urls(self, responses: List[requests.Response]) -> List[str]:
@@ -92,6 +92,7 @@ class WebSpider:
 
         urls = []
         for res in scraped_results:
+            # Try to filter the url based on rules. If it came back empty it means that the url is not valid
             if self._filter.filter([res.data]):
                 # Need to add the url to the data structure. The data structure will know how to handle the data.
                 # Each data structure has its own way of handling the data
@@ -108,7 +109,7 @@ class WebSpider:
         """
         for callback in self._callbacks:
             for response in responses:
-                callback.process(self._data_structure, response)
+                callback.process(graph=self._data_structure, data=response)
 
     async def crawl(self) -> WebGraph:
         """

@@ -71,7 +71,7 @@ class UrlFilter:
             if not self.is_new(url):
                 log.debug(f"drop duplicate {url}")
                 continue
-            self.seen.add(canonicalize_url(url))
+            self.seen.add(extract_base_url(url))
             found.append(url)
         return found
 

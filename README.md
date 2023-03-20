@@ -62,11 +62,10 @@ First, there need to be a scoring system. The scoring system will be based on th
 url has. But there can be cases where an email is considered junk, for example a random email address that is not
 real or a spam email. In order to solve this problem I used IDF to rank the email addresses. 
 
-### IDF
-IDF stands for Inverse Document Frequency. TF-IDF is a ranking algorithm that is used to rank words in a document.
-If the word is rare in the corpus it will be ranked high. If the word is common in the corpus it will be ranked low.
-To read more about TF-IDF please refer to https://en.wikipedia.org/wiki/Tf%E2%80%93idf.
-
+### TF-IDF
+TF-IDF is a ranking algorithm that is used to rank words in a document. It is based on the number of times a word 
+appears in a document and the number of documents that contain the word. To read more about TF-IDF please refer to
+https://en.wikipedia.org/wiki/Tf%E2%80%93idf.
 In our use case, if the email address is common it is considered junk, for example an email address of the university
 or a spam email address. If the email address is rare it is considered good, for example a real email address.
 

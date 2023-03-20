@@ -1,9 +1,13 @@
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 
-from collections import namedtuple
 
-CallbackResult = namedtuple('ParsedResult', ['domain', 'url', 'data', 'type'])
-
+@dataclass
+class CallbackResult:
+    domain: str
+    url: str
+    data: str
+    type: str
 
 class GraphCallback(ABC):
     """
