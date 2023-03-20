@@ -4,7 +4,10 @@ from src.data_structure.graph.callbacks.callback import CallbackResult
 import src.utils.constants as consts
 from src.utils.tools import extract_base_url
 
-class Normalizer:
+
+email_name_normalizer = lambda email: "".join(email.split('@')[0].split('.')).lower()
+
+class NodeDataNormalizer:
 
     def __call__(self, func):
         def wrapper(*args, **kwargs):

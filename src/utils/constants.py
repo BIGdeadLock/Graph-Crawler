@@ -103,6 +103,7 @@ DATA_TOKEN = "data"
 WEIGHT_TOKEN = 'weight'
 CALLBACK_ID_TOKEN = 'callback_id'
 GRAPH_NODES_CONFIG_TOKEN = "nodes"
+ALPHA_CONFIG_TOKEN = "alpha"
 
 # -----------------
 # FILTERS SECTION

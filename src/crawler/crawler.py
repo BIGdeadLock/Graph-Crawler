@@ -18,7 +18,7 @@ class WebSpider:
         self._callbacks = callbacks
         self._filter = url_filter
         self._start_seed = clean_url(start_seed)
-        self._data_structure = WebGraph()
+        self._data_structure = WebGraph(config=config)
         self._url_parser = URLsParser()
         self._max_depth = config.get(consts.CRAWLER_SECTION, consts.MAX_DEPTH_CONFIG_TOKEN, return_as_string=False)
         self._retries = config.get(consts.CRAWLER_SECTION, consts.MAX_RETIRES_CONFIG_TOKEN, return_as_string=False)

@@ -2,6 +2,7 @@ import networkx as nx
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 import pandas as pd
 from src.data_structure.graph.callbacks.callback import CallbackResult
+from src.utils.config import Config
 from src.utils.tools import EMAIL_REGEX
 import logging as log
 import jsonpickle
@@ -9,19 +10,20 @@ from jinja2 import Template
 import src.utils.constants as consts
 from src.utils.tools import extract_base_url
 from networkx.readwrite.json_graph import node_link_data
-from src.data_structure.graph.utils import Normalizer
+from src.data_structure.graph.utils import NodeDataNormalizer, email_name_normalizer
 from src.utils.tools import save_pickle, load_pickle
 
 class WebGraph(nx.Graph):
 
-    def __init__(self, callbacks = None, alpha = 0.8):
+    def __init__(self, callbacks = None, config = None):
         super().__init__()
         self._name_corpus, self._type_corpus = [], []
         self._cache = {}
         self._urls_tf_idf_index = {}
         self._callbacks = callbacks or []
         self._proba = None
-        self._alpha = alpha
+        config = config or Config()
+        self.alpha = config.get(consts.GRAPH_SECTION, consts.ALPHA_CONFIG_TOKEN, return_as_string=False)
 
     @property
     def cache(self):
@@ -31,7 +33,7 @@ class WebGraph(nx.Graph):
     def cache(self, value):
         self._cache = value
 
-    @Normalizer()
+    @NodeDataNormalizer()
     def add(self, new_data: CallbackResult):
         """
         Add the scraped data to the graph. The graph will know how to handle the data.
@@ -131,13 +133,13 @@ class WebGraph(nx.Graph):
             neighbors = [n for n in self.neighbors(url) if self.nodes[n]['type'] != consts.URL_TYPE_TOKEN]
             if neighbors:
                 # Some urls are connected to only other urls meaning that no emails were found in the url
-                self._name_corpus.append(" ".join([n.split("@")[0] for n in neighbors]))  # Add the name of the email to the corpus
+                self._name_corpus.append(" ".join([email_name_normalizer(n) for n in neighbors]))  # Add the name of the email to the corpus
                 self._type_corpus.append(" ".join([n.split("@")[1] for n in neighbors]))  # Add the type of the email to the corpus
                 # Save the index of the url in the corpus
                 self._urls_tf_idf_index[url] = idx
-                idx += 1 # Increment the index only for email urls
+                idx += 1  # Increment the index only for email urls
 
-    def _create_email_type_probabilities_distribution(self) -> pd.Series:
+    def _create_email_type_probabilities_distribution(self):
         """
         Build the probability distribution for the email types
         :return:
