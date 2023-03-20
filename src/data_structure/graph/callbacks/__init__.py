@@ -1,6 +1,5 @@
-from src.data_structure.graph.callbacks.email import EmailParser
-
+from src.data_structure.graph.callbacks.email import AddToGraph
 
 CALLBACKS = {
-    EmailParser.get_id(): EmailParser()
+    AddToGraph.get_id(): AddToGraph()
 }
