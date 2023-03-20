@@ -1,12 +1,30 @@
 # Graph-Crawler
-Repo for the project of email to graph crawler.
-
+Repo for the project of email to graph crawler. 
 
 # Design Overview
 Schema of high level design:
 
 ![image](https://user-images.githubusercontent.com/64005996/226172833-bc4ea31a-db37-413e-8c38-e013fb14e87b.png)
 
+
+
+### Crawler
+The class `crawler.py` has a method that will crawl the internet beginning with the specified url. As may be seen in the picture, it begins the crawling loop.
+Each new crawler was launched with a unique seed that the user provided.
+
+I applied the following to quicken the crawling:
+1) If several seeds are provided, each seed will launch a distinct crawler thread.
+2) To submit several requests simultaneously, each crawler makes use of concurrency using async requests.
+3) To conserve bandwidth and time, the scraped data is sent back encoded.
+
+### Parser
+The `parsers` package include a `URLsParser.py` parser to parse the html for more links to visit and scrape. I used a seperate package to enable other developers in the future to add more parsers for more specific links they want to search and parse for.
+
+### Filter
+Using predefined rules, the filter is used to filter URLs. Rules might, for instance, filter urls that end in.pdf. The class `URLFilter.py` has the logic in implementation
+
+### Callback
+This phrase serves as a catch-all for all processing-related reasoning. It may involve indexing the data, processing it for specific information, adding the data to a database, etc. With the intention of including all callbacks associated with the graph data structure, I established a `graph/callbacks` package in the graph package. `graph\callbacks\callback.py` contains an interface called __GraphCallback__. Future developers will be able to use it and create new callback logic as a result.
 
 ## Configuration
 Using a configuration file we will be able to dynamically change the behavior of the crawler.
@@ -15,17 +33,6 @@ This way the user can easily change the behavior of the crawler without having t
 ## Client-Server
 In order to run the program as a micro service I used flask to create a simple server that will
 run the crawler and return the results to the user.
-
-## Scraper
-I used a factory design pattern to dynamically create the scraper based on the configuration file or
-the user http request.
-The developer can easily add new scrapers by implementing the Scraper interface in 
-`scraper.py` and adding the scraper to the factory by adding it to the `SCRAPERS` list in `scraper\__init__.py`.
-
-## Crawler
-The `crawler.py` is a class with a function that will crawl the internet starting from the given url.
-to speed up the crawling process I used a thread pool to run the scrapers in a concurrent fashion.
-Each new crawler was started with a different seed which was given by the user.
 
 ## Datastructures - Graph
 I used a graph data structure to store the crawled data. The graph is implemented in `ds.py`.
