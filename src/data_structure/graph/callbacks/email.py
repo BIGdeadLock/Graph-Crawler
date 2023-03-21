@@ -2,7 +2,6 @@ from src.data_structure.graph.callbacks.callback import CallbackResult, GraphCal
 import src.utils.constants as consts
 import re
 from bs4 import BeautifulSoup
-from httpx import Response
 
 from src.utils.tools import extract_domain, extract_base_url, EMAIL_REGEX
 
@@ -16,7 +15,6 @@ class EmailParser:
             res = CallbackResult(extract_domain(data.url), extract_base_url(data.url),
                                  match.group(), consts.EMAIL_TYPE_TOKEN)
             yield res
-
 
 
 class AddToGraph(GraphCallback):

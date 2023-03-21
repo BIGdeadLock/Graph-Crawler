@@ -1,3 +1,5 @@
+from gevent import monkey as mon
+mon.patch_all(thread=False, select=False)
 
 import threading
 import logging as log

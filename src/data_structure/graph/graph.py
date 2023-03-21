@@ -3,27 +3,31 @@ from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 import pandas as pd
 from src.data_structure.graph.callbacks.callback import CallbackResult
 from src.utils.config import Config
-from src.utils.tools import EMAIL_REGEX
+from src.utils.tools import EMAIL_NAME
 import logging as log
 import jsonpickle
 from jinja2 import Template
 import src.utils.constants as consts
 from src.utils.tools import extract_base_url
 from networkx.readwrite.json_graph import node_link_data
-from src.data_structure.graph.utils import NodeDataNormalizer, email_name_normalizer
+from src.data_structure.graph.utils import NodeDataNormalizer,EmailNameTFIDFTransformer, EmailDomainDistributioner,\
+    email_name_normalizer, email_domain_extractor
+
 from src.utils.tools import save_pickle, load_pickle
+
+
 
 class WebGraph(nx.Graph):
 
     def __init__(self, callbacks = None, config = None):
         super().__init__()
-        self._name_corpus, self._type_corpus = [], []
+        self._email_name_corpus, self._email_domain_corpus = [], []
         self._cache = {}
         self._urls_tf_idf_index = {}
         self._callbacks = callbacks or []
         self._proba = None
         config = config or Config()
-        self.alpha = config.get(consts.GRAPH_SECTION, consts.ALPHA_CONFIG_TOKEN, return_as_string=False)
+        self._alpha = config.get(consts.GRAPH_SECTION, consts.ALPHA_CONFIG_TOKEN, return_as_string=False)
 
     @property
     def cache(self):
@@ -72,6 +76,9 @@ class WebGraph(nx.Graph):
         :param n: int. The number of nodes to return
         :return: list of dict: {domain: List of nodes and their rank in the domain}
         """
+        if not self._email_name_corpus or not self._email_domain_corpus:
+            self._build_corpus()
+
         self._add_weights_scores()
         ranking = self.get_ranking()
         clusters = self._get_domains_cluster()
@@ -103,23 +110,30 @@ class WebGraph(nx.Graph):
         Add the weights to the edges. The score is the tf-idf score of the email address in the url
         :return:
         """
-        vectorizer = TfidfVectorizer(use_idf=True, lowercase=False, smooth_idf=True, token_pattern=EMAIL_REGEX)  # No lowercase to preserve the emails
-        if not self._name_corpus:
-            self._build_corpus()
-
-        tfidf_matrix = vectorizer.fit_transform(self._name_corpus)
-        tfidf_df = pd.DataFrame(tfidf_matrix.toarray(), columns=vectorizer.get_feature_names_out())
-
+        tfidf_df = EmailNameTFIDFTransformer().fit_transform(self._email_name_corpus)
+        domain_proba = EmailDomainDistributioner().fit_transform(self._email_domain_corpus)
         # add tf-idf scores to the edge weights between emails and urls
         for url, idx in self._urls_tf_idf_index.items():
+
+            # If the url is the domain itself, skip it. We only want to rank real urls
+            if url == self.nodes[url]['domain']:
+                continue
+
             for neighbor in self.neighbors(url):
                 try:
                     node_type = self.nodes[neighbor]['type']
-                    proba_score = 0
                     if node_type != consts.URL_TYPE_TOKEN:
-                        proba_score = self._proba[neighbor]
+                        # The neighbor is an email. Get the probability score of the email's domain name based on the
+                        # training data
+                        email_domain = email_domain_extractor(neighbor)
+                        proba_score = domain_proba[email_domain]
+                        # Need to normalize the neighbor name to only be the email name for the tf-idf score
+                        email_name = email_name_normalizer(neighbor)
+                        total_score = tfidf_df.loc[idx, email_name].item() * self._alpha + proba_score * (1 - self._alpha)
+                    else:
+                        # For URL the score is 0 because there is no information about the email in the url
+                        total_score = 0
 
-                    total_score = tfidf_df.loc[idx, neighbor].item() * self._alpha + proba_score * (1 - self._alpha)
                     self.edges[url, neighbor]['weight'] = total_score
                 except KeyError:
                     # The neighbor is an url and not an email
@@ -133,22 +147,11 @@ class WebGraph(nx.Graph):
             neighbors = [n for n in self.neighbors(url) if self.nodes[n]['type'] != consts.URL_TYPE_TOKEN]
             if neighbors:
                 # Some urls are connected to only other urls meaning that no emails were found in the url
-                self._name_corpus.append(" ".join([email_name_normalizer(n) for n in neighbors]))  # Add the name of the email to the corpus
-                self._type_corpus.append(" ".join([n.split("@")[1] for n in neighbors]))  # Add the type of the email to the corpus
+                self._email_name_corpus.append(" ".join([email_name_normalizer(n) for n in neighbors]))  # Add the name of the email to the corpus
+                self._email_domain_corpus.append(" ".join([n.split("@")[1] for n in neighbors]))  # Add the type of the email to the corpus
                 # Save the index of the url in the corpus
                 self._urls_tf_idf_index[url] = idx
                 idx += 1  # Increment the index only for email urls
-
-    def _create_email_type_probabilities_distribution(self):
-        """
-        Build the probability distribution for the email types
-        :return:
-        """
-        vectorizer = CountVectorizer(token_pattern="[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+")
-        count_matrix = vectorizer.fit_transform(self._type_corpus)
-        count_df = pd.DataFrame(count_matrix.toarray(), columns=vectorizer.get_feature_names_out())
-
-        self._proba = count_df.sum() / count_df.sum().sum()
 
     def _get_domains_cluster(self) -> dict:
         """

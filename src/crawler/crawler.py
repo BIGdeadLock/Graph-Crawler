@@ -1,13 +1,17 @@
+# from gevent import monkey
+# monkey.patch_all(thread=False, select=False)
+import grequests
+import requests
+
+
 import asyncio
 from typing import List
-
-import requests
 import logging as log
 
 from src.data_structure.graph.callbacks.callback import GraphCallback
 from src.crawler.filter import UrlFilter
 from src.utils.config import Config
-from src.utils.tools import clean_url, req_with_retry
+from src.utils.tools import clean_url#, req_with_retry
 from src.crawler.parsers.url import URLsParser
 import src.utils.constants as consts
 from src.data_structure.graph.graph import WebGraph
@@ -25,73 +29,18 @@ class WebSpider:
         self._timeout = config.get(consts.CRAWLER_SECTION, consts.TIMEOUT_CONFIG_TOKEN, return_as_string=False)
         self._max_requests = config.get(consts.CRAWLER_SECTION, consts.MAX_REQUEST_CONFIG_TOKEN, return_as_string=False)
         log.warning(f"Max depth is set to {self._max_depth}")
+        self._stop_scaling_up = False
 
-    async def scrape(self, url: str) -> requests.Response:
-        """
-        Scrape the given urls for data.
-         ***
-         I tried using httpx but there is a bug in my pc or in the library that
-        caused the event loop to crash. In order to fix it I had to use requests
-        ***
-        :param urls: url pool -> List of string [url1, url2, ...]. The urls will be scraped in concurrently
-        :return: List of responses -> List of httpx.Response [response1, response2, ...]
-        """
-        try:
-            session = req_with_retry(self._retries)
-            response = session.get(url,
-                # when crawling we should use generous timeout
-                timeout=self._timeout,
-                # we should use common web browser header values to avoid being blocked
-                headers={
-                    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36",
-                    "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
-                    "accept-language": "en-US;en;q=0.9",
-                    "accept-encoding": "gzip, deflate, br", # we should use encoding to save bandwidth
-                }
-            )
-            return response
 
-        except Exception as e:
-            res = requests.Response()
-            res.status_code = 500
-            return res
-
-    async def scrape_concurrently(self, urls: List[str]) -> List[requests.Response]:
-        """
-        Scrape the given urls for data.
-         ***
-         I tried using httpx but there is a bug in my pc or in the library that
-        caused the event loop to crash. In order to fix it I had to use requests
-        ***
-        :param urls: url pool -> List of string [url1, url2, ...]. The urls will be scraped in concurrently
-        :return: List of responses -> List of httpx.Response [response1, response2, ...]
-        """
-        responses, failures = [], []
-        # To not put too much stress on the internet connection we will scrape the urls in batches
-        for next_batch in range(0, len(urls), self._max_requests):
-            for response in await asyncio.gather(*[self.scrape(url) for url in urls[next_batch:next_batch + self._max_requests]]):
-                if response.status_code == 200:
-                    responses.append(response)
-                else:
-                    failures.append(response)
-
-        return responses
-
-    def parse_for_urls(self, responses: List[requests.Response]) -> List[str]:
+    def parse_for_url(self, response: requests.Response) -> List[str]:
         """
         Parse the given responses for urls
-        :param responses: List of httpx.Response [response1, response2, ...]
+        :param response: Http response to scrape from
         :return: List of urls -> List of string [url1, url2, ...]
         """
-        scraped_results = []
-
-        for response in responses:
-            scraped_results.extend(self._url_parser.parse(response))
-
-        log.info(f"Found {len(scraped_results)} urls in the responses")
 
         urls = []
-        for res in scraped_results:
+        for res in self._url_parser.parse(response):
             # Try to filter the url based on rules. If it came back empty it means that the url is not valid
             if self._filter.filter([res.data]):
                 # Need to add the url to the data structure. The data structure will know how to handle the data.
@@ -99,30 +48,45 @@ class WebSpider:
                 self._data_structure.add(res)
                 urls.append(res.data)
 
+        log.debug(f"Found {len(urls)} urls in the responses")
         return urls
 
-    async def callbacks(self, responses: List[requests.Response]) -> None:
+    async def callbacks(self, response: requests.Response) -> None:
         """
-        Run the callbacks on the given responses
-        :param responses: List of Responses [response1, response2, ...]
-        :return: None
+        Run the callbacks on the given responses. The callbacks will be run in a sequential manner
+        :param response: Http responses to run the callbacks on. Need to have a content attribute
+        :return:
         """
         for callback in self._callbacks:
-            for response in responses:
-                callback.process(graph=self._data_structure, data=response)
+            callback.process(graph=self._data_structure, data=response)
 
     async def crawl(self) -> WebGraph:
         """
-        Crawl the web starting from the given seed
-        :return:
+        Crawl the web starting from the given seed. The search is done in a BFS manner and will stop when the max depth
+        is reached or when there are no more urls to crawl.
+        :return: WebGraph object
         """
         depth = 0
         url_pool = [self._start_seed]
         try:
             while url_pool and depth <= self._max_depth:
-                responses = await self.scrape_concurrently(urls=url_pool)
-                url_pool = self.parse_for_urls(responses=responses)
-                await self.callbacks(responses=responses)
+                for response in grequests.imap(
+                        [grequests.get(url, timeout=self._timeout) for url in url_pool], size=self._max_requests
+                ):
+                    if response.status_code == 429:
+
+                        log.warning(f"Got 429 response from {response.url}. Waiting for 5 seconds")
+                        await asyncio.sleep(2)
+                        log.warning("Trying to scaling down the requests")
+                        self._max_requests = self._max_requests // 2
+                        self._stop_scaling_up = True
+
+                    url_pool = self.parse_for_url(response=response)
+                    await self.callbacks(response=response)
+
+                if not self._stop_scaling_up:
+                    log.info("Scaling up the number of requests")
+                    self._max_requests = self._max_requests + 5
 
                 depth += 1
 

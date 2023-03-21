@@ -1,9 +1,8 @@
-from typing import List, Pattern
+from typing import List
 import posixpath
 from urllib.parse import urlparse
 
 from tldextract import tldextract
-from w3lib.url import canonicalize_url
 import logging as log
 import src.utils.constants as consts
 from src.utils.tools import extract_base_url
