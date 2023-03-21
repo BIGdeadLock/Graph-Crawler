@@ -18,7 +18,7 @@ SERVER_IMAGE_NAME="$DOCKER_NAME:"$SERVER_VER
 
 kill_docker(){
         echo "Going to kill all running dockers of the project"
-       echo $PASSWORD | sudo docker rm -f $SERVICE_NAME
+       echo $PASSWORD | sudo -S docker rm -f $SERVICE_NAME
 }
 
 build_server() {
