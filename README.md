@@ -105,7 +105,7 @@ You can run the program using python. 1. Open a cmd on the project directory and
 1. Run the command `python -m venv venv`
 2. Depend on you OS, run the command `source venv/Scrips/activate` in Windows (in linux replace Scripts with bin)
 3. Run the command `python3 -r ./build-docker/requirements.txt
-4. Run the command `python3 main.py`
+4. Run the command `python3 main.py` or `\venv\Scripts\python3.exe main.py` in Windows
 
 **NOTE:** I assume you have python version >= 3.8 installed locally.
 
