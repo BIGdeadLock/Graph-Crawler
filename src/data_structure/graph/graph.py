@@ -97,7 +97,7 @@ class WebGraph(nx.Graph):
         """
         self.add_nodes_from(graph.nodes(data=True))
         self.add_edges_from(graph.edges(data=True))
-        self._cache = {**self._cache, **graph.cache}
+        self._cache = self.cache | graph.cache
 
     def get_ranking(self) -> dict:
         """
