@@ -45,7 +45,8 @@ class WebGraph(nx.Graph):
         :return:
         """
         data = new_data.data
-        v = extract_base_url(new_data.url)
+        url = str(new_data.url)
+        v = extract_base_url(url)
         u = data
         self.add_node(v, domain=new_data.domain, type=consts.URL_TYPE_TOKEN)
         self.add_node(u, domain=new_data.domain, type=new_data.type)

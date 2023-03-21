@@ -21,8 +21,9 @@ class URLsParser:
             href = link.get('href')  # Get the href attribute of the link which points to the url
             if href is not None and href.startswith('http') and is_valid_url(href):
                 clean_link = clean_url(href)
+                url = str(response.url)
                 result.append(
-                    CallbackResult(extract_domain(response.url), extract_base_url(response.url),
+                    CallbackResult(extract_domain(url), extract_base_url(url),
                                    clean_link, self.get_id())
                 )
 

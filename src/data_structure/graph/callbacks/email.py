@@ -10,9 +10,9 @@ class EmailParser:
 
     def process(self, data):
         soup = BeautifulSoup(data.content, 'html.parser')
-
+        url = str(data.url)
         for match in re.finditer(EMAIL_REGEX, soup.get_text()):
-            res = CallbackResult(extract_domain(data.url), extract_base_url(data.url),
+            res = CallbackResult(extract_domain(url), extract_base_url(url),
                                  match.group(), consts.EMAIL_TYPE_TOKEN)
             yield res
 

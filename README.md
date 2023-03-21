@@ -120,10 +120,10 @@ For simple deployment I created a `docker-compose.yml` that will run the server 
 ![image](https://user-images.githubusercontent.com/64005996/226116446-e577d18a-86bb-4dc6-819e-427e583b69e5.png)
 
 
-**NOTE:** To kill the docker run the command `./run.sh kill`
-
-**Potential Bug**: In linux it turns out that greenlet / gevent are causing problems when running
-the flask server in a different thread
+**Docker functions:**
+1) To kill the docker, run the command `./run.sh kill`
+2) To monitor the docker logs, run the command: `./run.sh logging`
+3) 
 
 # API Documentation
 This project is using swagger for api documentation. Available at [http://localhost:5000/apidocs](http://localhost:5000/apidocs/#/default/post_graph_build). After running

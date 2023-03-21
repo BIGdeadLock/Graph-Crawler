@@ -1,12 +1,12 @@
-# from gevent import monkey
-# monkey.patch_all(thread=False, select=False)
-import grequests
-import requests
 
+import httpx
+import requests
+import joblib
 
 import asyncio
 from typing import List
 import logging as log
+
 
 from src.data_structure.graph.callbacks.callback import GraphCallback
 from src.crawler.filter import UrlFilter
@@ -30,6 +30,12 @@ class WebSpider:
         self._max_requests = config.get(consts.CRAWLER_SECTION, consts.MAX_REQUEST_CONFIG_TOKEN, return_as_string=False)
         log.warning(f"Max depth is set to {self._max_depth}")
         self._stop_scaling_up = False
+        self._headers = {
+                "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36",
+                "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
+                "accept-language": "en-US;en;q=0.9",
+                "accept-encoding": "gzip, deflate, br",
+            }
 
 
     def parse_for_url(self, response: requests.Response) -> List[str]:
@@ -70,9 +76,11 @@ class WebSpider:
         url_pool = [self._start_seed]
         try:
             while url_pool and depth <= self._max_depth:
-                for response in grequests.imap(
-                        [grequests.get(url, timeout=self._timeout) for url in url_pool], size=self._max_requests
-                ):
+                # res = await self.get_request(url_pool[0])
+                # for response in grequests.imap(
+                #         [grequests.get(url, timeout=self._timeout) for url in url_pool], size=self._max_requests
+                # ):
+                for response in self.imap(url_pool):
                     if response.status_code == 429:
 
                         log.warning(f"Got 429 response from {response.url}. Waiting for 5 seconds")
@@ -98,3 +106,12 @@ class WebSpider:
         except Exception as e:
             log.error(f"Error while crawling the web: {e}")
             raise e
+
+    def imap(self, url_pool):
+        tasks = [
+            (httpx.request, dict(method="GET", url=url, headers=self._headers, timeout=self._timeout, verify=False))
+            for url in url_pool
+        ]
+        res = joblib.Parallel(n_jobs=self._max_requests, backend="threading")(joblib.delayed(task[0])(**task[1]) for task in tasks)
+        for r in res:
+            yield r
