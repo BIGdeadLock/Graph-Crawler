@@ -69,6 +69,13 @@ https://en.wikipedia.org/wiki/Tf%E2%80%93idf.
 In our use case, if the email address is common it is considered junk, for example an email address of the university
 or a spam email address. If the email address is rare it is considered good, for example a real email address.
 
+### Email Domain Probability Distribution
+In order to account for the possibility of fake email addresses, I decided to map the email domains to a probability.
+To do so I used the following steps:
+1) Extract all email addresses domain from the graph's email nodes.
+2) For each domain, count the number of times it appears in the graph.
+3) Calculate the probability of each domain by dividing the number of times it appears by the total number of counted domains.
+
 
 ### Ranking Algorithm
 We need a ranking algorithm that will be able to rank the urls based on the number of email addresses and the weights.
@@ -76,7 +83,13 @@ For that purpose I used PageRank. PageRank is a ranking algorithm that is used t
 number of links that point to a page and the number of links that point to the pages that point to the page. To read more
 about PageRank please refer to https://en.wikipedia.org/wiki/PageRank. 
 
-**Using both IDF and PageRank helps us address different cases:**
+To allow page rank to best understand the importance of each url we need to add weights to the edges.
+The wight of each node is calculated as follows:
+1) If the node is a URL address, the weight is 0
+2) If the node is an email address, the weight is `TF-IDF(email_name) * alpha + (1-alpha) * Probability(email_domain)`
+where `alpha` is a parameter that can be changed by the user.
+
+**Using both TF-IDF & Probability together with PageRank helps us address different cases:**
 1) The email address is rare (good) but is the only one in the url (not good) - The url will be ranked low
 2) The email address is rare (good) but is not the only one in the url (good) - The url will be ranked high
 3) The email address is common (not good) but is the only one in the url (not good) - The url will be ranked low
