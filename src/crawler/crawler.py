@@ -36,7 +36,7 @@ class WebSpider:
                 "accept-language": "en-US;en;q=0.9",
                 "accept-encoding": "gzip, deflate, br",
             }
-        self._max_threads = os.cpu_count()
+        self._max_threads = os.cpu_count() * 2
 
 
     def parse_for_url(self, response: requests.Response) -> List[str]:
