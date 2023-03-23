@@ -19,7 +19,7 @@ class UrlFilter:
         # restrict filtering to sepcific subdomain
         self.subdomain = subdomain
         self.follow = follow or []
-        log.info(f"filter created for domain {self.subdomain}.{self.domain} with follow rules {follow}")
+        log.info(f"filter created for domains {self.subdomain}.{self.domain} with follow rules {follow}")
         self.seen = set()
 
     def is_valid_ext(self, url):
@@ -35,7 +35,9 @@ class UrlFilter:
         if not self.domain and not self.subdomain:
             return True
         parsed = tldextract.extract(url)
-        return parsed.registered_domain == self.domain and parsed.subdomain == self.subdomain
+        if parsed.registered_domain in self.domain and parsed.subdomain in self.subdomain:
+            return False
+        return True
 
     def is_valid_path(self, url):
         """ignore urls of undesired paths"""

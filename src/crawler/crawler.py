@@ -11,7 +11,7 @@ import logging as log
 from src.data_structure.graph.callbacks.callback import GraphCallback
 from src.crawler.filter import UrlFilter
 from src.utils.config import Config
-from src.utils.tools import clean_url#, req_with_retry
+from src.utils.tools import clean_url, os
 from src.crawler.parsers.url import URLsParser
 import src.utils.constants as consts
 from src.data_structure.graph.graph import WebGraph
@@ -36,6 +36,7 @@ class WebSpider:
                 "accept-language": "en-US;en;q=0.9",
                 "accept-encoding": "gzip, deflate, br",
             }
+        self._max_threads = os.cpu_count()
 
 
     def parse_for_url(self, response: requests.Response) -> List[str]:
@@ -76,12 +77,13 @@ class WebSpider:
         url_pool = [self._start_seed]
         try:
             while url_pool and depth <= self._max_depth:
-                # res = await self.get_request(url_pool[0])
-                # for response in grequests.imap(
-                #         [grequests.get(url, timeout=self._timeout) for url in url_pool], size=self._max_requests
-                # ):
                 for response in self.imap(url_pool):
-                    if response.status_code == 429:
+
+                    if self._max_requests > self._max_threads:
+                        log.warning(f"Max requests is bigger than the number of threads. Setting max requests to {self._max_threads}")
+                        self._max_requests = self._max_threads
+
+                    elif response.status_code == 429:
 
                         log.warning(f"Got 429 response from {response.url}. Waiting for 5 seconds")
                         await asyncio.sleep(2)
