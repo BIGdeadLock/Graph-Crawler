@@ -1,12 +1,10 @@
-
 import httpx
 import requests
 import joblib
 
 import asyncio
-from typing import List
+from typing import List, Generator
 import logging as log
-
 
 from src.data_structure.graph.callbacks.callback import GraphCallback
 from src.crawler.filter import UrlFilter
@@ -31,13 +29,12 @@ class WebSpider:
         log.warning(f"Max depth is set to {self._max_depth}")
         self._stop_scaling_up = False
         self._headers = {
-                "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36",
-                "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
-                "accept-language": "en-US;en;q=0.9",
-                "accept-encoding": "gzip, deflate, br",
-            }
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36",
+            "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
+            "accept-language": "en-US;en;q=0.9",
+            "accept-encoding": "gzip, deflate, br",
+        }
         self._max_threads = os.cpu_count() * 2
-
 
     def parse_for_url(self, response: requests.Response) -> List[str]:
         """
@@ -80,7 +77,8 @@ class WebSpider:
                 for response in self.imap(url_pool):
 
                     if self._max_requests > self._max_threads:
-                        log.warning(f"Max requests is bigger than the number of threads. Setting max requests to {self._max_threads}")
+                        log.warning(
+                            f"Max requests is bigger than the number of threads. Setting max requests to {self._max_threads}")
                         self._max_requests = self._max_threads
 
                     elif response.status_code == 429:
@@ -109,11 +107,12 @@ class WebSpider:
             log.error(f"Error while crawling the web: {e}")
             raise e
 
-    def imap(self, url_pool):
+    def imap(self, url_pool) -> Generator:
         tasks = [
             (httpx.request, dict(method="GET", url=url, headers=self._headers, timeout=self._timeout, verify=False))
             for url in url_pool
         ]
-        res = joblib.Parallel(n_jobs=self._max_requests, backend="threading")(joblib.delayed(task[0])(**task[1]) for task in tasks)
+        res = joblib.Parallel(n_jobs=self._max_requests, backend="threading")(
+            joblib.delayed(task[0])(**task[1]) for task in tasks)
         for r in res:
             yield r
