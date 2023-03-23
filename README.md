@@ -82,6 +82,8 @@ To do so I used the following steps:
 2) For each domain, count the number of times it appears in the graph.
 3) Calculate the probability of each domain by dividing the number of times it appears by the total number of counted domains.
 
+![image](https://user-images.githubusercontent.com/64005996/227138667-51d473b7-82b1-4b0d-8fd5-fa22c69801d3.png)
+
 
 ### Ranking Algorithm
 We need a ranking algorithm that will be able to rank the urls based on the number of email addresses and the weights.
