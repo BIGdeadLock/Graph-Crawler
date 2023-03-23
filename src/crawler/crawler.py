@@ -84,7 +84,7 @@ class WebSpider:
                     elif response.status_code == 429:
 
                         log.warning(f"Got 429 response from {response.url}. Waiting for 5 seconds")
-                        await asyncio.sleep(2)
+                        await asyncio.sleep(5)
                         log.warning("Trying to scaling down the requests")
                         self._max_requests = self._max_requests // 2
                         self._stop_scaling_up = True
