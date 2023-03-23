@@ -27,6 +27,12 @@ Using predefined rules, the filter is used to filter URLs. Rules might, for inst
 ### Callback
 This phrase serves as a catch-all for all processing-related reasoning. It may involve indexing the data, processing it for specific information, adding the data to a database, etc. With the intention of including all callbacks associated with the graph data structure, I established a `graph/callbacks` package in the graph package. `graph\callbacks\callback.py` contains an interface called __GraphCallback__. Future developers will be able to use it and create new callback logic as a result.
 
+## Speed
+To speed up the crawling process I used multithreading. Each thread will crawl a different seed and each seed will
+spawn a new thread for each new url it finds. This way we can crawl the internet faster.
+When a depth is finished to be crawled, the crawler will scale up the number of threads to crawl the next depth.
+If too many requests are made, the crawler will wait down scale the number of threads.
+
 ## Configuration
 Using a configuration file we will be able to dynamically change the behavior of the crawler.
 This way the user can easily change the behavior of the crawler without having to recompile the code.
