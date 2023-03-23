@@ -11,8 +11,8 @@ definitions:
   CrawlingConfig:
     type: object
     properties:
-      scrapers:
-        description: "The scrapers to use for crawling. Options for now is only email."
+      nodes:
+        description: "The type of nodes you want to be added to graph once scraped. Options for now is only email."
         type: array
         items:
           type: string
