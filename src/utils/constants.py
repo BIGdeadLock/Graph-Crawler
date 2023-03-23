@@ -89,7 +89,7 @@ IGNORED_EXTENSIONS = [
     # office suites
     'xls', 'xlsx', 'ppt', 'pptx', 'pps', 'doc', 'docx', 'odt', 'ods', 'odg', 'odp',
     # other
-    'css', 'pdf', 'exe', 'bin', 'rss', 'dmg', 'iso', 'apk',
+    'css', 'pdf', 'exe', 'bin', 'rss', 'dmg', 'iso', 'apk', 'jar', 'csv', 'js', 'json', 'xml', 'swf', 'class', 'psd'
 ]
 
 # -----------------
