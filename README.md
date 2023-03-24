@@ -139,7 +139,7 @@ the server you can use the swagger ui to test the api.
 ![image](https://user-images.githubusercontent.com/64005996/226118961-4dd4f78d-bd83-4b65-a9f6-630dd5124d80.png)
 
 # Testing - CI/CD
-All tests are implemeneted in the `testing` directory.
+A testing framework was implemented. For future tests expanding, all future test need to implemented in the `testing` directory.
 
 ## Unit Testing
 All unit testing are in `testing/unit_test`. The tests are run automaticly on every push using github actions.
