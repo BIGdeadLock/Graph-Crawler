@@ -51,7 +51,7 @@ in each domain. This way the user can easily change the data structure without h
 ### Graph structure
 The graph structure is an undirected graph. Each node is a url or an email address. Each edge is a link between two nodes.
 Each node has two attributes: `domain` and `type`. The `domain` attribute is the domain of the url or the email address.
-The `type` attribute is either `url` or `email`. Each edge has a weight of 1 if one of the nodes is an email address and
+The `type` attribute is either `url` or `email`. Each edge has a weight not equal to 0 if one of the nodes is an email address and
 0 otherwise.
 
 ![image](https://user-images.githubusercontent.com/64005996/226116477-8a410f4d-6593-44f1-ad0c-99433243889e.png)
