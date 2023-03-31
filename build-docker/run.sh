@@ -5,7 +5,7 @@ SERVICE_NAME="crawler"
 SERVER="crawler"
 DOCKER_NAME="crawler"
 
-PASSWORD="yavnun1993"
+PASSWORD="" # Sudo password
 
 # Commands:
 BUILD_ALL="build"
