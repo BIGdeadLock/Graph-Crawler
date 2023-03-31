@@ -1,5 +1,5 @@
-name: Test Unit Init
-on: push
+name: CI
+on: [push]
 jobs:
   run_tests:
     runs-on: ubuntu-latest
