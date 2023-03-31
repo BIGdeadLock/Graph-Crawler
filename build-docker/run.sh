@@ -24,7 +24,7 @@ kill_docker(){
 build_server() {
     echo "Going to build " $SERVER " with " $SERVER_IMAGE_NAME
     docker image rm -f $SERVER_IMAGE_NAME 2> /dev/null
-    docker build .. -t $SERVER_IMAGE_NAME -f Dockerfile.txt
+    docker build .. -t $SERVER_IMAGE_NAME -f Dockerfile
 }
 
 build_all() {

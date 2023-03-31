@@ -1,5 +1,8 @@
 # Use an official Python runtime as a parent image
-FROM python:3.8.0
+FROM python:3.9.0
+
+# Set the locale to use UTF-8 encoding
+ENV LANG C.UTF-8
 
 # Copy the current directory contents into the container at /app
 COPY src /app/src
@@ -22,7 +25,5 @@ RUN apt-get update && apt-get install -y vim
 RUN rm /bin/sh && ln -s /bin/bash /bin/sh
 
 WORKDIR /app
-#CMD ["python", "server.py"]
 CMD ["sleep", "36000"]
-#CMD ["python", "./main.py"]
 

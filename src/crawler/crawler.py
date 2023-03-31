@@ -1,3 +1,5 @@
+import time
+
 import httpx
 import requests
 import joblib
@@ -64,14 +66,19 @@ class WebSpider:
         for callback in self._callbacks:
             callback.process(graph=self._data_structure, data=response)
 
-    async def crawl(self) -> WebGraph:
+    async def crawl(self, start_seed=None) -> WebGraph:
         """
         Crawl the web starting from the given seed. The search is done in a BFS manner and will stop when the max depth
         is reached or when there are no more urls to crawl.
+        :param start_seed: Url to start crawling from
         :return: WebGraph object
         """
         depth = 0
-        url_pool = [self._start_seed]
+
+        if not start_seed:
+            start_seed = [self._start_seed]
+
+        url_pool = start_seed
         try:
             while url_pool and depth <= self._max_depth:
                 for response in self.imap(url_pool):
@@ -89,6 +96,10 @@ class WebSpider:
                         self._max_requests = self._max_requests // 2
                         self._stop_scaling_up = True
 
+                    elif response.status_code != 200:
+                        log.warning(f"Got {response.status_code} response from {response.url}. Skipping")
+                        continue
+
                     url_pool = self.parse_for_url(response=response)
                     await self.callbacks(response=response)
 
@@ -103,16 +114,37 @@ class WebSpider:
 
             return self._data_structure
 
+        except (httpx.TimeoutException, httpx.ConnectTimeout, httpx.ReadTimeout, httpx.WriteTimeout) as e:
+            log.warning(f"Got timeout exception. Waiting for 5 seconds")
+            await asyncio.sleep(5)
+            log.warning("Trying to scaling down the requests")
+            self._max_requests = self._max_requests // 2
+            if self._max_requests == 0:
+                log.error("Max requests is 0. No more requests can be sent. Returning the current graph")
+                return self._data_structure
+
+            self._stop_scaling_up = True
+            await self.crawl(start_seed=url_pool)
+
         except Exception as e:
             log.error(f"Error while crawling the web: {e}")
             raise e
 
     def imap(self, url_pool) -> Generator:
         tasks = [
-            (httpx.request, dict(method="GET", url=url, headers=self._headers, timeout=self._timeout, verify=False))
+            (self.send_request, {"url": url})
             for url in url_pool
         ]
         res = joblib.Parallel(n_jobs=self._max_requests, backend="threading")(
             joblib.delayed(task[0])(**task[1]) for task in tasks)
+
         for r in res:
             yield r
+
+    def send_request(self, url):
+        try:
+            response = httpx.request(method="GET", url=url, headers=self._headers, timeout=self._timeout, verify=False)
+            return response
+        except Exception as e:
+            log.error(f"Error while sending request to {url}: {e}")
+            return httpx.Response(status_code=500, request=httpx.Request("GET", url), content=b"")
