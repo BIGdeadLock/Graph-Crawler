@@ -31,7 +31,7 @@ This phrase serves as a catch-all for all processing-related reasoning. It may i
 To speed up the crawling process I used multithreading. Each thread will crawl a different seed and each seed will
 spawn a new thread for each new url it finds. This way we can crawl the internet faster.
 When a depth is finished to be crawled, the crawler will scale up the number of threads to crawl the next depth.
-If too many requests are made, the crawler will wait down scale the number of threads.
+If too many requests are made, the crawler will wait and down scale the number of threads.
 
 ## Configuration
 Using a configuration file we will be able to dynamically change the behavior of the crawler.
@@ -42,7 +42,7 @@ In order to run the program as a micro service I used flask to create a simple s
 run the crawler and return the results to the user.
 
 ## Datastructures - Graph
-I used a graph data structure to store the crawled data. The graph is implemented in `ds.py`.
+I used a graph data structure to store the crawled data. The graph is implemented in `data_strcutre\graph\graph.py`.
 I consider the possibility that future developers will want to use other data structures to store the data.
 As so, I created a data structure package with a graph package inside it. Each data structure will have its own package.
 Each data structure will have to implement the method `get_top_n_for_each_domain` that will return the top n nodes
