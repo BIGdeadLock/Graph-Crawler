@@ -106,9 +106,9 @@ where `alpha` is a parameter that can be changed by the user.
 3) The email address is common (not good) but is the only one in the url (not good) - The url will be ranked low
 4) The email address is common (not good) but is not the only one in the url (good) - The url will be ranked high
 
-
+************************************************************
 **Note:** I tried various other algorithms and all the experiments and data analysis are in the `notebooks\EDA.ipynb` file.
-
+************************************************************
 
 # Starting the service
 You have two options to run the program:
