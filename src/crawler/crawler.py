@@ -25,7 +25,7 @@ class WebSpider:
         self._data_structure = WebGraph(config=config)
         self._url_parser = URLsParser()
         self._max_depth = config.get(consts.CRAWLER_SECTION, consts.MAX_DEPTH_CONFIG_TOKEN, return_as_string=False)
-        self._retries = config.get(consts.CRAWLER_SECTION, consts.MAX_RETIRES_CONFIG_TOKEN, return_as_string=False)
+        self._max_retries = config.get(consts.CRAWLER_SECTION, consts.MAX_RETIRES_CONFIG_TOKEN, return_as_string=False)
         self._timeout = config.get(consts.CRAWLER_SECTION, consts.TIMEOUT_CONFIG_TOKEN, return_as_string=False)
         self._max_requests = config.get(consts.CRAWLER_SECTION, consts.MAX_REQUEST_CONFIG_TOKEN, return_as_string=False)
         log.warning(f"Max depth is set to {self._max_depth}")
@@ -37,6 +37,7 @@ class WebSpider:
             "accept-encoding": "gzip, deflate, br",
         }
         self._max_threads = os.cpu_count() * 2
+        self._exception_count = 0
 
     def parse_for_url(self, response: requests.Response) -> List[str]:
         """
@@ -74,7 +75,6 @@ class WebSpider:
         :return: WebGraph object
         """
         depth = 0
-
         if not start_seed:
             start_seed = [self._start_seed]
 
@@ -88,24 +88,32 @@ class WebSpider:
                             f"Max requests is bigger than the number of threads. Setting max requests to {self._max_threads}")
                         self._max_requests = self._max_threads
 
-                    elif response.status_code == 429:
-
-                        log.warning(f"Got 429 response from {response.url}. Waiting for 5 seconds")
-                        await asyncio.sleep(5)
-                        log.warning("Trying to scaling down the requests")
-                        self._max_requests = self._max_requests // 2
-                        self._stop_scaling_up = True
-
-                    elif response.status_code != 200:
+                    elif response.status_code != 200 and response.status_code != 301 and response.status_code != 302:
                         log.warning(f"Got {response.status_code} response from {response.url}. Skipping")
+                        self._exception_count += 1
                         continue
 
                     url_pool = self.parse_for_url(response=response)
                     await self.callbacks(response=response)
 
                 if not self._stop_scaling_up:
-                    log.info("Scaling up the number of requests")
                     self._max_requests = self._max_requests + 5
+                    log.info(f"Scaling up the number of send requests to {self._max_requests}")
+
+                if self._exception_count > self._max_retries:
+                    log.warning(f"Got {self._exception_count} exceptions. Waiting for 5 seconds")
+                    await asyncio.sleep(5)
+                    log.warning("Trying to scaling down the requests")
+                    self._max_requests = self._max_requests // 2
+                    if self._max_requests == 0:
+                        log.error("Max requests is 0. No more requests can be sent. Returning the current graph")
+                        return self._data_structure
+
+                    elif self._max_requests < self._max_requests:
+                        log.warning("There is indication that the max requests is too low. Stopping scaling up")
+                        self._stop_scaling_up = True
+
+                    self._exception_count = 0
 
                 depth += 1
 
@@ -113,18 +121,6 @@ class WebSpider:
                 log.warning(f"Reached max depth of {self._max_depth}. Stop crawling")
 
             return self._data_structure
-
-        except (httpx.TimeoutException, httpx.ConnectTimeout, httpx.ReadTimeout, httpx.WriteTimeout) as e:
-            log.warning(f"Got timeout exception. Waiting for 5 seconds")
-            await asyncio.sleep(5)
-            log.warning("Trying to scaling down the requests")
-            self._max_requests = self._max_requests // 2
-            if self._max_requests == 0:
-                log.error("Max requests is 0. No more requests can be sent. Returning the current graph")
-                return self._data_structure
-
-            self._stop_scaling_up = True
-            await self.crawl(start_seed=url_pool)
 
         except Exception as e:
             log.error(f"Error while crawling the web: {e}")
