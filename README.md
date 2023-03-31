@@ -57,10 +57,13 @@ The `type` attribute is either `url` or `email`. Each edge has a weight not equa
 ![image](https://user-images.githubusercontent.com/64005996/226116477-8a410f4d-6593-44f1-ad0c-99433243889e.png)
 
 ## Decoupeling
-I tried to decouple the logic between classes as much as I could so that future development could be easier. Some thing I did:
+I tried to decouple the logic between classes as much as I could so that future development could be easier. Some things I did:
 1. The data-structure is responsible with handaling the scraped data
 2. The crawler is only responsible for crawling the internet
-3. The scrapers are responsible for only scraped the data passed from the crawler.
+3. The parser is only responsible for parsing the data
+4. The filter is only responsible for filtering the data
+5. The callback is only responsible for handling the data
+6. The client-server is only responsible for handling the requests.
 
 # Business Logic 
 In order to state which URL is considered better and which is not, we need to define a ranking algorithm.
