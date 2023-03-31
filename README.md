@@ -14,7 +14,7 @@ Each new crawler was launched with a unique seed that the user provided.
 
 I applied the following to quicken the crawling:
 1) If several seeds are provided, each seed will launch a distinct crawler thread.
-2) To submit several requests simultaneously, each crawler makes use of concurrency using async requests.
+2) To submit several requests simultaneously, each crawler makes use of multithreading.
 3) To conserve bandwidth and time, the scraped data is sent back encoded.
 4) Caching: URLs that were visited will be normalized and saved in the cache to prevent from scraping them again.
 
