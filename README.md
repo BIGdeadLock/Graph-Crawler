@@ -76,7 +76,7 @@ TF-IDF is a ranking algorithm that is used to rank words in a document. It is ba
 appears in a document and the number of documents that contain the word. To read more about TF-IDF please refer to
 https://en.wikipedia.org/wiki/Tf%E2%80%93idf.
 In our use case, if the email address is common it is considered junk, for example the university's email address
-or a spam email address. If the email address is rare it is considered good, for example a real email address.
+or a spam email address. If the email address is rare it is considered good, for example a professor's email address.
 
 ### Email Domain Probability Distribution
 In order to account for the possibility of fake email addresses, I decided to map the email domains to a probability.
